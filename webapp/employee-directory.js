@@ -424,13 +424,15 @@ const EmployeeDirectory = (() => {
     const IMPORT_FIELDS = [
         { key: '', label: '\u2014 skip \u2014' },
         { key: 'name', label: 'Name' },
+        { key: 'title', label: 'Job Title' },
+        { key: 'email', label: 'Email' },
+        { key: 'department', label: 'Department' },
+        { key: 'location', label: 'Location' },
         { key: 'status', label: 'Status' },
+        { key: 'phone', label: 'Phone' },
         { key: 'startDate', label: 'Start Date' },
         { key: 'gender', label: 'Gender' },
-        { key: 'department', label: 'Department' },
-        { key: 'phone', label: 'Phone' },
-        { key: 'email', label: 'Email' },
-        { key: 'location', label: 'Location' },
+        { key: 'manager', label: 'Manager' },
     ];
 
     // Smart header → field auto-detect
@@ -438,6 +440,7 @@ const EmployeeDirectory = (() => {
         const h = (header || '').toLowerCase().trim();
         const map = {
             'name': 'name', 'full name': 'name', 'fullname': 'name', 'employee name': 'name', 'employee': 'name',
+            'title': 'title', 'job title': 'title', 'position': 'title', 'role': 'title', 'job role': 'title', 'designation': 'title',
             'status': 'status', 'employee status': 'status', 'state': 'status',
             'start date': 'startDate', 'startdate': 'startDate', 'start_date': 'startDate', 'hire date': 'startDate', 'date hired': 'startDate', 'date started': 'startDate',
             'gender': 'gender', 'sex': 'gender',
@@ -445,6 +448,7 @@ const EmployeeDirectory = (() => {
             'phone': 'phone', 'phone number': 'phone', 'telephone': 'phone', 'mobile': 'phone', 'contact': 'phone', 'contact number': 'phone', 'phne': 'phone',
             'email': 'email', 'e-mail': 'email', 'email address': 'email', 'mail': 'email',
             'location': 'location', 'office': 'location', 'city': 'location', 'office location': 'location',
+            'manager': 'manager', 'manager email': 'manager', 'manager_email': 'manager', 'reports to': 'manager', 'supervisor': 'manager',
         };
         return map[h] || '';
     }

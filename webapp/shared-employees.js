@@ -65,12 +65,14 @@ const SharedEmployeeStore = (() => {
                 id,
                 name: data.name || '',
                 email: data.email || '',
+                title: data.title || '',
                 department: data.department || '',
                 location: data.location || '',
                 status: data.status || 'active',
                 startDate: data.startDate || new Date().toISOString().split('T')[0],
                 gender: data.gender || '',
                 phone: data.phone || '',
+                manager: data.manager || '',
                 avatar: data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name || 'New')}&background=6366f1&color=fff&bold=true&size=128`,
                 parentId: data.parentId || null
             };
