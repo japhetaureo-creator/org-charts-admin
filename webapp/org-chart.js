@@ -30,39 +30,135 @@ const OrgChartState = {
 let _orgChartInitialized = false;
 
 // ── Org chart hierarchy persistence ─────────────────────────────────────────
-const _OC_HIERARCHY_KEY = 'orgchart_hierarchy_v1';
+const _OC_HIERARCHY_KEY = 'orgchart_hierarchy_v2'; // v2 = compact JSON tree
+
+/**
+ * Walk the DOM hierarchy and extract a compact tree:
+ *   [{ id: 'emp_001', children: [{ id: 'emp_002', children: [] }, ...] }]
+ */
+function _ocExtractTree(container) {
+    const tree = [];
+    // Each direct .flex.flex-col.items-center child is a node wrapper
+    const wrappers = container.querySelectorAll(':scope > .flex.flex-col.items-center');
+    wrappers.forEach(wrapper => {
+        const card = wrapper.querySelector(':scope > .org-card');
+        if (!card) return;
+        const node = { id: card.dataset.employeeId, children: [] };
+        // Find children container inside this wrapper
+        const childrenRow = wrapper.querySelector(':scope > .relative.flex.justify-center');
+        if (childrenRow) {
+            node.children = _ocExtractTree(childrenRow);
+        }
+        tree.push(node);
+    });
+    return tree;
+}
+
+/**
+ * Build DOM from a compact tree using createOrgCard.
+ */
+function _ocBuildTree(tree, container) {
+    tree.forEach(node => {
+        const emp = SharedEmployeeStore.getById(node.id);
+        if (!emp) return; // employee deleted, skip
+
+        const card = createOrgCard(emp);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'flex flex-col items-center';
+        wrapper.appendChild(card);
+
+        if (node.children && node.children.length > 0) {
+            // Vertical connector
+            const vLine = document.createElement('div');
+            vLine.className = 'org-line-v h-16';
+            wrapper.appendChild(vLine);
+
+            // Children row
+            const childrenRow = document.createElement('div');
+            childrenRow.className = 'relative flex justify-center gap-12 pt-0';
+            wrapper.appendChild(childrenRow);
+
+            // Recurse: build child wrappers with vertical connectors
+            node.children.forEach(childNode => {
+                const childEmp = SharedEmployeeStore.getById(childNode.id);
+                if (!childEmp) return;
+                const childCard = createOrgCard(childEmp);
+                const childWrapper = document.createElement('div');
+                childWrapper.className = 'relative flex flex-col items-center pt-8';
+                const childVLine = document.createElement('div');
+                childVLine.className = 'absolute top-0 h-8 org-line-v';
+                childWrapper.appendChild(childVLine);
+                childWrapper.appendChild(childCard);
+
+                // Recurse deeper if grandchildren exist
+                if (childNode.children && childNode.children.length > 0) {
+                    const gcVLine = document.createElement('div');
+                    gcVLine.className = 'org-line-v h-16';
+                    childWrapper.appendChild(gcVLine);
+                    const gcRow = document.createElement('div');
+                    gcRow.className = 'relative flex justify-center gap-12 pt-0';
+                    childWrapper.appendChild(gcRow);
+                    _ocBuildTree(childNode.children.map(gc => gc), gcRow);
+                }
+
+                childrenRow.appendChild(childWrapper);
+            });
+
+            // Add horizontal connector
+            updateHorizontalConnector(childrenRow);
+        }
+
+        container.appendChild(wrapper);
+    });
+}
 
 function _ocSaveHierarchy() {
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     if (!hierarchy) return;
-    if (hierarchy.querySelectorAll('.org-card').length > 0) {
-        localStorage.setItem(_OC_HIERARCHY_KEY, hierarchy.innerHTML);
-    } else {
+    const tree = _ocExtractTree(hierarchy);
+    if (tree.length === 0) {
         localStorage.removeItem(_OC_HIERARCHY_KEY);
+        return;
+    }
+    try {
+        const json = JSON.stringify(tree);
+        localStorage.setItem(_OC_HIERARCHY_KEY, json);
+    } catch (e) {
+        // Quota exceeded — trim logs and retry once
+        console.warn('[OC-SAVE] Quota exceeded, trimming logs and retrying...');
+        if (typeof SharedLogStore !== 'undefined') SharedLogStore.clear();
+        localStorage.removeItem('orgchart_hierarchy_v1'); // remove old bloated key
+        try {
+            localStorage.setItem(_OC_HIERARCHY_KEY, JSON.stringify(tree));
+        } catch (e2) {
+            console.error('[OC-SAVE] Still failed after cleanup:', e2);
+        }
     }
 }
 
 function _ocLoadHierarchy() {
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     if (!hierarchy) return false;
+
+    // Clean up old v1 innerHTML key (saves space)
+    localStorage.removeItem('orgchart_hierarchy_v1');
+
     const stored = localStorage.getItem(_OC_HIERARCHY_KEY);
     if (!stored) return false;
-    hierarchy.innerHTML = stored;
-
-    // Migration: if any org-card is a DIRECT child of the hierarchy div (no wrapper),
-    // wrap it in .flex.flex-col.items-center so child-adding works correctly.
-    [...hierarchy.children].forEach(el => {
-        if (el.classList.contains('org-card')) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'flex flex-col items-center';
-            hierarchy.insertBefore(wrapper, el);
-            wrapper.appendChild(el);
-        }
-    });
-
-    _ocReattachListeners();
-    return true;
+    try {
+        const tree = JSON.parse(stored);
+        if (!Array.isArray(tree) || tree.length === 0) return false;
+        hierarchy.innerHTML = '';
+        _ocBuildTree(tree, hierarchy);
+        _ocReattachListeners();
+        return hierarchy.querySelectorAll('.org-card').length > 0;
+    } catch (e) {
+        console.error('[OC-LOAD] Failed to parse stored hierarchy:', e);
+        return false;
+    }
 }
+
+
 
 function _ocReattachListeners() {
     document.querySelectorAll('#oc-chart-hierarchy .org-card').forEach(card => {
@@ -82,6 +178,7 @@ function _ocReattachListeners() {
 
 
 function initOrgChart() {
+
     // Update breadcrumb with the saved company name
     const breadcrumbEl = document.getElementById('oc-breadcrumb-company');
     if (breadcrumbEl && typeof CompanySettings !== 'undefined') {
@@ -111,7 +208,8 @@ function initOrgChart() {
     }
 
     // Restore persisted hierarchy, or clear hardcoded demo cards to start fresh
-    if (!_ocLoadHierarchy()) {
+    const loadResult = _ocLoadHierarchy();
+    if (!loadResult) {
         const hierarchy = document.getElementById('oc-chart-hierarchy');
         if (hierarchy) hierarchy.innerHTML = '';
     }

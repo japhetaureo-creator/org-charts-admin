@@ -23,7 +23,17 @@ const SharedLogStore = (() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
         } catch (e) {
-            console.error('SharedLogStore: failed to save to localStorage', e);
+            // Quota exceeded — trim to 10 entries and retry
+            if (e.name === 'QuotaExceededError' || e.code === 22) {
+                logs = logs.slice(0, 10);
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+                } catch (e2) {
+                    console.error('SharedLogStore: still cannot save after trimming', e2);
+                }
+            } else {
+                console.error('SharedLogStore: failed to save to localStorage', e);
+            }
         }
     }
 
@@ -72,8 +82,8 @@ const SharedLogStore = (() => {
 
             logs.unshift(log);
 
-            // Cap at 100 logs to prevent unbounded storage growth
-            if (logs.length > 100) logs.pop();
+            // Cap at 30 logs to prevent localStorage bloat
+            if (logs.length > 30) logs.pop();
 
             _save();
             notifyListeners('add', log);
