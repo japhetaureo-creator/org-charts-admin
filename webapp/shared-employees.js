@@ -23,8 +23,16 @@ const SharedEmployeeStore = (() => {
     function _save() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+            return true;
         } catch (e) {
-            console.error('SharedEmployeeStore: failed to save to localStorage', e);
+            const isQuota = e.name === 'QuotaExceededError' || e.code === 22;
+            console.error(
+                isQuota
+                    ? 'SharedEmployeeStore: localStorage quota exceeded – try removing employee photos to free space.'
+                    : 'SharedEmployeeStore: failed to save to localStorage',
+                e
+            );
+            return false;
         }
     }
 
@@ -101,7 +109,11 @@ const SharedEmployeeStore = (() => {
             if (idx === -1) return null;
             const oldData = { ...employees[idx] };
             employees[idx] = { ...employees[idx], ...data };
-            _save();
+            if (!_save()) {
+                // Revert in-memory change so the store stays consistent
+                employees[idx] = oldData;
+                return { __saveError: true, message: 'storage_full' };
+            }
 
             // Log the event with more detail
             if (typeof SharedLogStore !== 'undefined') {

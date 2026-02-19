@@ -156,11 +156,15 @@ const EmployeeDirectory = (() => {
 
     // UPDATE
     function updateEmployee(id, data) {
-        const updated = SharedEmployeeStore.update(id, data);
-        if (!updated) return null;
+        const result = SharedEmployeeStore.update(id, data);
+        if (!result) return null;
+        if (result.__saveError) {
+            showToast('⚠️ Changes could not be saved – storage is full. Remove employee photos to free space.', 'error');
+            return null;
+        }
         renderTable();
-        showToast(`${updated.name} updated successfully`, 'success');
-        return updated;
+        showToast(`${result.name} updated successfully`, 'success');
+        return result;
     }
 
     // DELETE
@@ -200,10 +204,24 @@ const EmployeeDirectory = (() => {
         form.querySelector('#ed-field-email').value = employee?.email || '';
         form.querySelector('#ed-field-startdate').value = employee?.startDate || '';
         form.querySelector('#ed-field-gender').value = employee?.gender || 'Male';
-        form.querySelector('#ed-field-dept').value = employee?.department || '';
         form.querySelector('#ed-field-phone').value = employee?.phone || '';
         form.querySelector('#ed-field-location').value = employee?.location || '';
         form.querySelector('#ed-field-status').value = employee?.status || 'active';
+
+        // Department: restore value; add temp option if dept isn't in the current list
+        const deptSel = form.querySelector('#ed-field-dept');
+        if (deptSel) {
+            const dept = employee?.department || '';
+            deptSel.value = dept;
+            if (dept && deptSel.value !== dept) {
+                // Dept not in dropdown — add it temporarily so the value is never lost
+                const tempOpt = document.createElement('option');
+                tempOpt.value = dept;
+                tempOpt.textContent = dept + ' (imported)';
+                deptSel.prepend(tempOpt);
+                deptSel.value = dept;
+            }
+        }
 
         // Reset file input
         const avatarInput = form.querySelector('#ed-field-avatar');
@@ -782,8 +800,20 @@ const EmployeeDirectory = (() => {
                 }
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    pendingAvatarDataUrl = ev.target.result;
-                    setAvatarPreview(pendingAvatarDataUrl);
+                    // Compress to max 200×200 px JPEG to avoid localStorage quota overflow
+                    const img = new Image();
+                    img.onload = () => {
+                        const MAX = 200;
+                        let w = img.width, h = img.height;
+                        if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+                        else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        pendingAvatarDataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                        setAvatarPreview(pendingAvatarDataUrl);
+                    };
+                    img.src = ev.target.result;
                 };
                 reader.readAsDataURL(file);
             });
