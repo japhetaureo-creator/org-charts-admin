@@ -176,6 +176,24 @@ function _ocReattachListeners() {
     });
 }
 
+/**
+ * Apply the current zoom + pan to the hierarchy element and update the zoom label.
+ * All code that needs to set the hierarchy transform should call this function.
+ */
+function _ocApplyTransform(hier) {
+    if (!hier) hier = document.getElementById('oc-chart-hierarchy');
+    if (!hier) return;
+    hier.style.transformOrigin = 'top center';
+    hier.style.transform = `translate(${OrgChartState.panX}px, ${OrgChartState.panY}px) scale(${OrgChartState.zoom})`;
+    const label = document.getElementById('oc-zoom-label');
+    if (label) label.textContent = `${Math.round(OrgChartState.zoom * 100)}%`;
+}
+
+/** Convenience: apply zoom only (keeps existing pan) */
+function _ocApplyZoom() {
+    _ocApplyTransform();
+}
+
 
 function initOrgChart() {
 
@@ -307,7 +325,7 @@ function initOrgChartEventListeners() {
             OrgChartState.panY += dy;
             OrgChartState.panStartX = e.clientX;
             OrgChartState.panStartY = e.clientY;
-            chartHierarchy.style.transform = `translate(${OrgChartState.panX}px, ${OrgChartState.panY}px)`;
+            _ocApplyTransform(chartHierarchy);
             updateMinimapViewport();
         });
 
@@ -389,16 +407,66 @@ function initOrgChartEventListeners() {
         });
     }
 
-    // Fit to View (reset pan to origin)
+    // Fit to View — auto-zoom to fit the tree in the viewport
     const fitBtn = document.getElementById('oc-fit-view');
     if (fitBtn) {
-        fitBtn.addEventListener('click', () => centerTree());
+        fitBtn.addEventListener('click', () => {
+            const hier = document.getElementById('oc-chart-hierarchy');
+            const cvs = document.getElementById('org-chart-canvas');
+            if (!hier || !cvs) return;
+            // Temporarily reset to 100% to measure natural size
+            hier.style.transform = 'scale(1)';
+            const hierW = hier.scrollWidth;
+            const hierH = hier.scrollHeight;
+            const cvsW = cvs.clientWidth - 360; // account for sidebar padding
+            const cvsH = cvs.clientHeight - 80;
+            const fitZoom = Math.min(cvsW / hierW, cvsH / hierH, 1);
+            const clamped = Math.max(0.25, Math.min(2, Math.round(fitZoom * 20) / 20)); // round to 5%
+            OrgChartState.zoom = clamped;
+            _ocApplyZoom();
+            centerTree(true);
+        });
     }
 
     // Center View
     const centerBtn = document.getElementById('oc-center-view');
     if (centerBtn) {
         centerBtn.addEventListener('click', () => centerTree());
+    }
+
+    // ── Zoom controls ────────────────────────────────────────────────────
+    const zoomInBtn = document.getElementById('oc-zoom-in');
+    const zoomOutBtn = document.getElementById('oc-zoom-out');
+    const zoomResetBtn = document.getElementById('oc-zoom-reset');
+
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', () => {
+            OrgChartState.zoom = Math.min(2, Math.round((OrgChartState.zoom + 0.1) * 10) / 10);
+            _ocApplyZoom();
+        });
+    }
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', () => {
+            OrgChartState.zoom = Math.max(0.25, Math.round((OrgChartState.zoom - 0.1) * 10) / 10);
+            _ocApplyZoom();
+        });
+    }
+    if (zoomResetBtn) {
+        zoomResetBtn.addEventListener('click', () => {
+            OrgChartState.zoom = 1;
+            _ocApplyZoom();
+        });
+    }
+
+    // Ctrl + mousewheel zoom
+    if (canvas) {
+        canvas.addEventListener('wheel', (e) => {
+            if (!e.ctrlKey && !e.metaKey) return;
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.05 : 0.05;
+            OrgChartState.zoom = Math.max(0.25, Math.min(2, Math.round((OrgChartState.zoom + delta) * 20) / 20));
+            _ocApplyZoom();
+        }, { passive: false });
     }
 
     // Minimap click-to-navigate
@@ -429,7 +497,7 @@ function initOrgChartEventListeners() {
             OrgChartState.panY = -(fracY * worldH - worldPad);
 
             hier.style.transition = 'transform 0.3s ease';
-            hier.style.transform = `translate(${OrgChartState.panX}px, ${OrgChartState.panY}px)`;
+            _ocApplyTransform(hier);
             setTimeout(() => { hier.style.transition = ''; }, 350);
             updateMinimapViewport();
 
@@ -2011,7 +2079,7 @@ function centerTree(smooth = true) {
         hier.style.transition = 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
     }
 
-    hier.style.transform = `translate(${OrgChartState.panX}px, ${OrgChartState.panY}px)`;
+    _ocApplyTransform(hier);
 
     if (smooth) {
         setTimeout(() => { hier.style.transition = ''; }, 450);

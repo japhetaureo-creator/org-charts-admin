@@ -37,7 +37,7 @@
             },
         }
     </script>
-    <link href="styles.css?v=4" rel="stylesheet" />
+    <link href="styles.css?v=5" rel="stylesheet" />
     <link href="org-chart.css?v=4" rel="stylesheet" />
     <link href="integrations.css?v=4" rel="stylesheet" />
     <link href="notifications.css?v=4" rel="stylesheet" />
@@ -830,6 +830,23 @@
                         title="Toggle dot grid">
                         <span class="material-symbols-outlined !text-lg">grid_on</span>
                     </button>
+                    <div class="w-px bg-slate-700"></div>
+                    <button id="oc-zoom-out"
+                        class="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white transition-all backdrop-blur-sm shadow-lg"
+                        title="Zoom out (−)">
+                        <span class="material-symbols-outlined !text-lg">remove</span>
+                    </button>
+                    <button id="oc-zoom-reset"
+                        class="flex items-center justify-center h-9 px-2.5 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-all backdrop-blur-sm shadow-lg text-xs font-semibold min-w-[3rem] tabular-nums"
+                        title="Reset zoom to 100%">
+                        <span id="oc-zoom-label">100%</span>
+                    </button>
+                    <button id="oc-zoom-in"
+                        class="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-400 hover:bg-slate-700 hover:text-white transition-all backdrop-blur-sm shadow-lg"
+                        title="Zoom in (+)">
+                        <span class="material-symbols-outlined !text-lg">add</span>
+                    </button>
+                    <div class="w-px bg-slate-700"></div>
                     <button id="oc-fit-view"
                         class="flex items-center justify-center w-9 h-9 rounded-lg bg-slate-800/80 border border-slate-700 text-indigo-400 hover:bg-slate-700 hover:text-white transition-all backdrop-blur-sm shadow-lg"
                         title="Fit to screen">
@@ -2157,10 +2174,10 @@
 
                     <div class="settings-field">
                         <label class="settings-label">Add Department</label>
-                        <div style="display:flex;gap:8px;align-items:center;">
+                        <div class="dept-add-row">
                             <input id="dept-name-input" type="text" placeholder="e.g. Customer Support"
-                                class="settings-input" style="flex:1;margin:0;" />
-                            <button id="dept-add-btn" class="int-btn-primary" style="white-space:nowrap;flex-shrink:0;">
+                                class="settings-input" />
+                            <button id="dept-add-btn" class="int-btn-primary">
                                 <span class="material-symbols-outlined !text-base">add</span>Add
                             </button>
                         </div>
@@ -2168,8 +2185,8 @@
 
                     <div class="settings-field">
                         <label class="settings-label">Current Departments <span id="dept-count"
-                                style="font-weight:400;color:#9dabb9;"></span></label>
-                        <div id="dept-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                                class="dept-count-label"></span></label>
+                        <div id="dept-list" class="dept-chip-list">
                             <!-- Rendered by JS -->
                         </div>
                     </div>
@@ -2282,7 +2299,7 @@
         <script src="monday-integration-ui.js?v=4"></script>
         <script src="company-settings.js?v=4"></script>
         <script src="settings.js?v=4"></script>
-        <script src="org-chart.js?v=6"></script>
+        <script src="org-chart.js?v=7"></script>
         <script src="employee-directory.js?v=4"></script>
         <script src="user-management.js?v=4"></script>
         <script src="app.js?v=4"></script>

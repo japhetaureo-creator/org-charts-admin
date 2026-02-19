@@ -1421,3 +1421,32 @@ body.oc-full-page-mode:not(.oc-org-chart-mode) .page-settings-visible {
 .flex.flex-col.items-center.oc-collapsed>.relative.flex.justify-center {
     display: none !important;
 }
+
+/* ── Department settings helpers (moved from inline styles) ──────────────── */
+.dept-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.dept-add-row .settings-input {
+    flex: 1;
+    margin: 0;
+}
+
+.dept-add-row .int-btn-primary {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.dept-count-label {
+    font-weight: 400;
+    color: #9dabb9;
+}
+
+.dept-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
