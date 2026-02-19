@@ -163,16 +163,24 @@ function navigateToPage(page) {
     // Always hide settings cleanly (CSS controls display via class)
     if (settingsPage) settingsPage.classList.remove('page-settings-visible');
 
+    // Clear previous page-specific body classes
+    document.body.classList.remove('oc-org-chart-mode');
+
     if (fullPages.includes(page)) {
-        // Hide the main dashboard and all full pages
-        if (mainEl) mainEl.classList.add('hidden');
+        // Switch main into "nav mode": shrinks to 0 via CSS but header stays fixed/visible
+        if (mainEl) {
+            mainEl.classList.remove('hidden');
+            mainEl.classList.add('oc-nav-mode');
+        }
+        document.body.classList.add('oc-full-page-mode');
+        if (page === 'org-chart') document.body.classList.add('oc-org-chart-mode');
+
+        // Hide all full pages, then show the requested one
         if (orgChartPage) orgChartPage.classList.add('hidden');
         if (empDirPage) empDirPage.classList.add('hidden');
         if (usersPage) usersPage.classList.add('hidden');
         if (intPage) intPage.classList.add('hidden');
-        // settings hidden by default via CSS; shown below if needed
 
-        // Show the target full page
         if (page === 'settings') {
             if (settingsPage) settingsPage.classList.add('page-settings-visible');
         } else {
@@ -200,13 +208,17 @@ function navigateToPage(page) {
             SettingsUI.init();
         }
     } else {
-        // Show the main dashboard, hide all full pages
-        if (mainEl) mainEl.classList.remove('hidden');
+        // Restore main to normal; show company dashboard
+        if (mainEl) {
+            mainEl.classList.remove('oc-nav-mode');
+            mainEl.classList.remove('hidden');
+        }
+        document.body.classList.remove('oc-full-page-mode');
+
         if (orgChartPage) orgChartPage.classList.add('hidden');
         if (empDirPage) empDirPage.classList.add('hidden');
         if (usersPage) usersPage.classList.add('hidden');
         if (intPage) intPage.classList.add('hidden');
-        // settings already hidden above via classList.remove('page-settings-visible')
 
         // Show correct page section within dashboard
         document.querySelectorAll('#page-content > .page-section').forEach(section => {

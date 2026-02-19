@@ -1375,3 +1375,49 @@ html.dark .settings-input::placeholder {
 html.light .settings-input::placeholder {
     color: #94a3b8;
 }
+
+/* ── Full-page nav mode: keep shared header visible on all tabs ───────────── */
+main.oc-nav-mode {
+    flex: 0 0 0px !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: visible;
+    padding: 0;
+    min-width: 0;
+}
+
+main.oc-nav-mode>header {
+    position: fixed;
+    top: 0;
+    left: 16rem;
+    /* matches sidebar w-64 */
+    right: 0;
+    z-index: 200;
+    width: auto;
+}
+
+/* Org chart has its own header — hide the shared fixed one */
+body.oc-org-chart-mode main.oc-nav-mode>header {
+    display: none;
+}
+
+main.oc-nav-mode #page-content {
+    display: none !important;
+}
+
+/* Pad non-org-chart full pages below the fixed shared header (≈73px) */
+body.oc-full-page-mode:not(.oc-org-chart-mode) #page-employee-directory,
+body.oc-full-page-mode:not(.oc-org-chart-mode) #page-users,
+body.oc-full-page-mode:not(.oc-org-chart-mode) #page-integrations {
+    padding-top: 73px;
+}
+
+body.oc-full-page-mode:not(.oc-org-chart-mode) .page-settings-visible {
+    padding-top: 73px;
+}
+
+/* ── Org chart collapse / expand ─────────────────────────────────────────── */
+.flex.flex-col.items-center.oc-collapsed>.org-line-v,
+.flex.flex-col.items-center.oc-collapsed>.relative.flex.justify-center {
+    display: none !important;
+}

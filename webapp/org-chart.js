@@ -57,6 +57,14 @@ function _ocReattachListeners() {
         if (card._ocMouseDown) card.removeEventListener('mousedown', card._ocMouseDown);
         card._ocMouseDown = (e) => ocDragMouseDown(e, card);
         card.addEventListener('mousedown', card._ocMouseDown);
+
+        // Ensure collapse buttons loaded from localStorage are tagged
+        card.querySelectorAll('button').forEach(btn => {
+            const t = btn.querySelector('.material-symbols-outlined')?.textContent?.trim();
+            if (t === 'expand_circle_down' || t === 'expand_circle_right') {
+                btn.dataset.action = 'collapse';
+            }
+        });
     });
 }
 
@@ -210,17 +218,34 @@ function initOrgChartEventListeners() {
             centerTree(false); // Initial center without transition
         }, 500);
 
-        // Card click to select / highlight
+        // Card click: collapse button (event delegation) and card selection
         canvas.addEventListener('click', (e) => {
+            // Collapse / expand a branch
+            const collapseBtn = e.target.closest('[data-action="collapse"]');
+            if (collapseBtn) {
+                e.stopPropagation();
+                const card = collapseBtn.closest('.org-card');
+                const wrapper = card?.closest('.flex.flex-col.items-center');
+                if (wrapper) {
+                    const isCollapsed = wrapper.classList.toggle('oc-collapsed');
+                    [...wrapper.children].forEach(el => {
+                        if (el.classList.contains('org-line-v') ||
+                            (el.classList.contains('relative') && el.classList.contains('flex') && el.classList.contains('justify-center'))) {
+                            el.style.display = isCollapsed ? 'none' : '';
+                        }
+                    });
+                    const icon = collapseBtn.querySelector('.material-symbols-outlined');
+                    if (icon) icon.textContent = isCollapsed ? 'expand_circle_right' : 'expand_circle_down';
+                    _ocSaveHierarchy();
+                }
+                return;
+            }
+
+            // Card selection (skip if clicking any button, or the delete/add buttons)
             const card = e.target.closest('.org-card');
             if (card) {
-                // Don't select if clicking buttons inside the card
                 if (e.target.closest('button')) return;
-
-                // Deselect previous
                 document.querySelectorAll('.org-card.oc-selected').forEach(c => c.classList.remove('oc-selected'));
-
-                // Select this one
                 card.classList.add('oc-selected');
                 OrgChartState.selectedCard = card.dataset.employeeId;
             }
@@ -1832,7 +1857,7 @@ function createOrgCard(emp, level = 'individual') {
                     <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusLabel}
                 </span>
             </div>
-            <button class="text-slate-400 hover:text-white hover:bg-white/10 rounded-full p-1.5 transition-colors">
+            <button data-action="collapse" class="text-slate-400 hover:text-white hover:bg-white/10 rounded-full p-1.5 transition-colors" title="Collapse/expand subtree">
                 <span class="material-symbols-outlined !text-xl">expand_circle_down</span>
             </button>
         </div>
