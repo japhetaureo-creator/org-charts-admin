@@ -196,6 +196,9 @@ function navigateToPage(page) {
         if (page === 'settings' && typeof SettingsPageUI !== 'undefined') {
             SettingsPageUI.init();
         }
+        if (page === 'settings' && typeof SettingsUI !== 'undefined') {
+            SettingsUI.init();
+        }
     } else {
         // Show the main dashboard, hide all full pages
         if (mainEl) mainEl.classList.remove('hidden');
