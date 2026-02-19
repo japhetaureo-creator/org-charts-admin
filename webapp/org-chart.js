@@ -29,6 +29,38 @@ const OrgChartState = {
 
 let _orgChartInitialized = false;
 
+// ── Org chart hierarchy persistence ─────────────────────────────────────────
+const _OC_HIERARCHY_KEY = 'orgchart_hierarchy_v1';
+
+function _ocSaveHierarchy() {
+    const hierarchy = document.getElementById('oc-chart-hierarchy');
+    if (!hierarchy) return;
+    if (hierarchy.querySelectorAll('.org-card').length > 0) {
+        localStorage.setItem(_OC_HIERARCHY_KEY, hierarchy.innerHTML);
+    } else {
+        localStorage.removeItem(_OC_HIERARCHY_KEY);
+    }
+}
+
+function _ocLoadHierarchy() {
+    const hierarchy = document.getElementById('oc-chart-hierarchy');
+    if (!hierarchy) return false;
+    const stored = localStorage.getItem(_OC_HIERARCHY_KEY);
+    if (!stored) return false;
+    hierarchy.innerHTML = stored;
+    _ocReattachListeners();
+    return true;
+}
+
+function _ocReattachListeners() {
+    document.querySelectorAll('#oc-chart-hierarchy .org-card').forEach(card => {
+        if (card._ocMouseDown) card.removeEventListener('mousedown', card._ocMouseDown);
+        card._ocMouseDown = (e) => ocDragMouseDown(e, card);
+        card.addEventListener('mousedown', card._ocMouseDown);
+    });
+}
+
+
 function initOrgChart() {
     // Update breadcrumb with the saved company name
     const breadcrumbEl = document.getElementById('oc-breadcrumb-company');
@@ -56,6 +88,12 @@ function initOrgChart() {
         });
 
         _orgChartInitialized = true;
+    }
+
+    // Restore persisted hierarchy, or clear hardcoded demo cards to start fresh
+    if (!_ocLoadHierarchy()) {
+        const hierarchy = document.getElementById('oc-chart-hierarchy');
+        if (hierarchy) hierarchy.innerHTML = '';
     }
 
     // Render the org chart
@@ -610,6 +648,7 @@ function deleteCard(card) {
                 card.remove();
             }
             checkEmptyState();
+            _ocSaveHierarchy();
         }, 300);
     });
 }
@@ -969,6 +1008,7 @@ function _ocSelectEmployee(emp) {
     if (OrgChartState.editMode) {
         showAddButtons();
     }
+    _ocSaveHierarchy();
 }
 
 function showEditModal(employeeId) {
@@ -1421,6 +1461,7 @@ function performCardAssign(sourceCard, targetCard) {
             iconBg: 'bg-blue-500'
         });
     }
+    _ocSaveHierarchy();
 }
 
 /**
@@ -1753,7 +1794,8 @@ function createOrgCard(emp, level = 'individual') {
     card.dataset.employeeId = emp.id;
     card.dataset.department = emp.department || '';
 
-    const profileImg = emp.name ? emp.name.toLowerCase().replace(/\s+/g, '-') + '-bg' : 'default-avatar-bg';
+    const avatarUrl = emp.avatar
+        || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'Employee')}&background=6366f1&color=fff&bold=true&size=128`;
 
     // Status badge — shown only when the Status Badge setting is enabled
     const isInactive = emp.status === 'inactive';
@@ -1768,7 +1810,8 @@ function createOrgCard(emp, level = 'individual') {
         <div class="absolute inset-0 rounded-2xl bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
         <div class="relative z-10 flex items-center gap-4">
             <div class="relative">
-                <div class="h-16 w-16 rounded-2xl bg-center bg-no-repeat bg-cover shadow-lg ring-2 ring-white/10 ${profileImg}"></div>
+                <div class="h-16 w-16 rounded-2xl bg-center bg-no-repeat bg-cover shadow-lg ring-2 ring-white/10"
+                    style="background-image: url('${avatarUrl}')"></div>
                 <div class="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-500 border-2 border-slate-800"></div>
             </div>
             <div class="flex-1 overflow-hidden">
