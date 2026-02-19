@@ -3,12 +3,33 @@
 // =============================================================================
 // Centralized store for audit logs and organizational changes.
 // Used by the Company Profile "Activity Feed" to show real-time history.
+// Data is persisted to localStorage so logs survive page refreshes.
 // =============================================================================
 
 const SharedLogStore = (() => {
+    const STORAGE_KEY = 'orgchart_logs';
+
+    // ── Persistence helpers ───────────────────────────────────────────────
+    function _load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
+        }
+    }
+
+    function _save() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+        } catch (e) {
+            console.error('SharedLogStore: failed to save to localStorage', e);
+        }
+    }
+
     // ── Audit Logs ───────────────────────────────────────────────────────
-    // Runtime log store — starts empty; all entries are real and user-generated
-    let logs = [];
+    // Load from localStorage on startup; starts empty on first run.
+    let logs = _load();
 
     // ── Change listeners ─────────────────────────────────────────────────
     const listeners = [];
@@ -51,9 +72,10 @@ const SharedLogStore = (() => {
 
             logs.unshift(log);
 
-            // Cap at 100 logs for now to prevent memory issues
+            // Cap at 100 logs to prevent unbounded storage growth
             if (logs.length > 100) logs.pop();
 
+            _save();
             notifyListeners('add', log);
             return log;
         },
@@ -61,9 +83,8 @@ const SharedLogStore = (() => {
         /** Clear all logs */
         clear() {
             logs = [];
+            _save();
             notifyListeners('clear', null);
         }
     };
 })();
-
-console.log('shared-logs.js loaded —', SharedLogStore.getAll().length, 'logs');

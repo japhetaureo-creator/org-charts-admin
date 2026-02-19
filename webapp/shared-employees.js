@@ -4,130 +4,32 @@
 // Single source of truth for employee data used by both
 // Organization Chart and Employee Directory modules.
 // Changes trigger onChange listeners so both UIs stay in sync.
+// Data is persisted to localStorage so it survives page refreshes.
 // =============================================================================
 
 const SharedEmployeeStore = (() => {
-    // ── Unified employee data ────────────────────────────────────────────
-    let employees = [
-        {
-            id: 'emp_001',
-            name: 'James Wilson',
-            email: 'james.wilson@acme.corp',
-            department: 'Leadership',
-            location: 'New York, USA',
-            status: 'active',
-            startDate: '2015-01-12',
-            gender: 'Male',
-            phone: '12125550101',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCH0PswGnzylr3WjMsYe5faxAo31vyAsh0Gi5--LlarGKQZvIIpt6qIlP0nDydMY34XOR1lLV8w_XBbWmk4ch9v5lxTHUzvNPKvUsGyFLMrwQlTPfGC0UzuHkP8I97DYcY0esRnC6HIsc8mB2G5Nn8Hz2yfF_aHvjgDHmhKplgML9zq3oyxa47A77r2KgWs92LvNzJ1DIMEVMcJQFV1vNyw-LALL_HAUDbVX7rx8q3PpTKW95t7ruOfEE2_SMeaoEPgNIzcCLdMx3KI',
-            parentId: null
-        },
-        {
-            id: 'emp_002',
-            name: 'Sarah Jenkins',
-            email: 'sarah.jenkins@acme.corp',
-            department: 'Engineering',
-            location: 'San Francisco, USA',
-            status: 'active',
-            startDate: '2018-05-20',
-            gender: 'Female',
-            phone: '14155550202',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuACAxx_ILiip8vy6J0axyDfIy4lduNGggOqzXtLSL-fP5kBpTIeHvDwB7VnAshQu6wEUUvBky6cxDBEyYdB0gNMrVbgfgA4xHJ2kBgH9qGd1q8EcDETIdWcfdOdglXc-1YLT7-db-6GXS1cahQDC2zFGBbbhivxYnsBJc5J_lT2XaWErnzsuAFWJRwtFSW-6wmJ1T4ZYt-w0zYS9a4jbPGoAn72jmo2rhhlzCc7_mkoTm1-k_bZMcJR1pfRH8mAyfmp7oYJbZK2siWS',
-            parentId: 'emp_001'
-        },
-        {
-            id: 'emp_003',
-            name: 'Marcus Thorne',
-            email: 'marcus.thorne@acme.corp',
-            department: 'Marketing',
-            location: 'London, UK',
-            status: 'active',
-            startDate: '2020-09-15',
-            gender: 'Male',
-            phone: '442075550303',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKl4mEqHa4YVu_HOoNY3f5eASwmqnt-PIB_MTMzUTFmHVNJxsu8nsHgzYK46IvsrrGYAbsQzayUKP7wb_bMOiRIg3pHtbOG-hbXeAlslFlvpAGQ8iwRbXPmAejP2BIxN-tj0I8Spc6bbd_1GLFZ5S6iM2uKg_cSdr3vIHQZNjKeIylmeHS--kUH72vosGonmOjJpzXQUd10Ypt6R0j5HvXHgq5wyBA8DX1nbG6x1ofcomY3Vc3u8vrnm-8t9LYskej7WKhwkx8KLRT',
-            parentId: 'emp_001'
-        },
-        {
-            id: 'emp_004',
-            name: 'Alicia Vance',
-            email: 'alicia.vance@acme.corp',
-            department: 'Operations',
-            location: 'Singapore',
-            status: 'active',
-            startDate: '2021-11-22',
-            gender: 'Female',
-            phone: '6565550404',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDRmQydPJNSkjzx5-NPoeyu1eSKEJFk8P14e-RBNMUZIUXP4qNuMzLZ4_29CF0iaZ06PvpDgcjpZwPhXvNQ0PoPvWXUBBHli2fIEwg5fA_IYcsOcwGWsT1A4EmxwJUcNzcy5P6W6P5LWRZNBnkWD1gXGOc7ckjA2ZJJ21UZY3H7nXNhkJ6if0y9bzf00WIIjOqALPcu6xC1jgNBE3SN3vxBMX6p2P_f6kqNQY5tnABatrGEn6H_RkBY_DDZiqo-warwPqUsYfGqWKKc',
-            parentId: 'emp_001'
-        },
-        {
-            id: 'emp_005',
-            name: 'Michael Chen',
-            email: 'michael.chen@acme.corp',
-            department: 'Engineering',
-            location: 'San Francisco, USA',
-            status: 'active',
-            startDate: '2022-03-10',
-            gender: 'Male',
-            phone: '14155550505',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDaX8t91nk56nc0t9TRPtITd1mOvg9YRBdtjjDyO3NXgZf9UvPMeNRFDKfMfxYdHcQCuL6GdKMilHuM1shJrlgA_fVGuC32NtPDEixSpzuv4TOZXKmLp6kd1BkxZ4K-u4YOQKbXP6pAsUCI1Av8YLYpzkGWfiKGAzqi6tcFYSVUv104gDQMik1HA4UvNySrAvTXVbICnOBnzupREzjp-ic8LMi_AInTdtjQlCC20H6kI4dJCKKA6D3Ha6Wvu55UodfCvSlchZigdAgn',
-            parentId: 'emp_002'
-        },
-        {
-            id: 'emp_006',
-            name: 'Elena Rodriguez',
-            email: 'elena.rodriguez@acme.corp',
-            department: 'Engineering',
-            location: 'Madrid, Spain',
-            status: 'active',
-            startDate: '2023-01-05',
-            gender: 'Female',
-            phone: '34915550606',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAuCbKUqi-vVQmzTaZY4aknHFsKs01AnEBF92Dm2-olR5bqGMPJasZgxhbCFu55pAk_3U83-SEOsNmhw8JOEo_tM0seoP8Yn2iAypiL4O3KAvExecedbP5E2FP26OX9D4SAfL6bmS7l2dyWw1Moccw1-RUs3O8WmA7Qfd1yTufNAiBj2dFTDPihaM0RfAcofYnWhgNiBJoOeKcRkpuK985tJyYRBAbnI0CbQfJRhm2sv7n-_W0YIGLKf9CLbeWNAU-3E339ryMX_9Ud',
-            parentId: 'emp_002'
-        },
-        // --- Directory Employees (Searching these should work) ---
-        {
-            id: 'emp_dir_001',
-            name: 'Christian Alquizola',
-            email: 'christian.alquizola@company.com',
-            department: 'Pricing',
-            location: 'Cebu, Philippines',
-            status: 'active',
-            startDate: '2024-01-03',
-            gender: 'Male',
-            phone: '6397516011',
-            avatar: 'https://ui-avatars.com/api/?name=Christian+Alquizola&background=6366f1&color=fff&bold=true&size=128',
-            parentId: null
-        },
-        {
-            id: 'emp_dir_002',
-            name: 'Cindy Bobosa',
-            email: 'cindy.bobosa@company.com',
-            department: 'Operations',
-            location: 'Metro Manila, Philippines',
-            status: 'active',
-            startDate: '2020-12-21',
-            gender: 'Female',
-            phone: '6397516011',
-            avatar: 'https://ui-avatars.com/api/?name=Cindy+Bobosa&background=ec4899&color=fff&bold=true&size=128',
-            parentId: null
-        },
-        {
-            id: 'emp_dir_003',
-            name: 'Daniel Trinidad',
-            email: 'daniel.trinidad@company.com',
-            department: 'Purchasing',
-            location: 'Metro Manila, Philippines',
-            status: 'active',
-            startDate: '2025-09-09',
-            gender: 'Male',
-            phone: '6396116011',
-            avatar: 'https://ui-avatars.com/api/?name=Daniel+Trinidad&background=f59e0b&color=fff&bold=true&size=128',
-            parentId: null
+    const STORAGE_KEY = 'orgchart_employees';
+
+    // ── Persistence helpers ───────────────────────────────────────────────
+    function _load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch {
+            return [];
         }
-    ];
+    }
+
+    function _save() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(employees));
+        } catch (e) {
+            console.error('SharedEmployeeStore: failed to save to localStorage', e);
+        }
+    }
+
+    // Start from localStorage (empty on first run, since no seed data is preloaded)
+    let employees = _load();
 
     // ── Change listeners ─────────────────────────────────────────────────
     const listeners = [];
@@ -173,6 +75,7 @@ const SharedEmployeeStore = (() => {
                 parentId: data.parentId || null
             };
             employees.unshift(employee);
+            _save();
 
             // Log the event
             if (!silent && typeof SharedLogStore !== 'undefined') {
@@ -196,6 +99,7 @@ const SharedEmployeeStore = (() => {
             if (idx === -1) return null;
             const oldData = { ...employees[idx] };
             employees[idx] = { ...employees[idx], ...data };
+            _save();
 
             // Log the event with more detail
             if (typeof SharedLogStore !== 'undefined') {
@@ -257,6 +161,7 @@ const SharedEmployeeStore = (() => {
             const emp = employees.find(e => e.id === id);
             if (!emp) return null;
             employees = employees.filter(e => e.id !== id);
+            _save();
 
             // Log the event
             if (typeof SharedLogStore !== 'undefined') {
@@ -274,12 +179,18 @@ const SharedEmployeeStore = (() => {
             return emp;
         },
 
-        /** Replace the entire data set (e.g., from Firebase) */
+        /** Replace the entire data set (e.g., from an import or sync) */
         setAll(data) {
             employees = data;
+            _save();
+            notifyListeners('reset', null);
+        },
+
+        /** Clear all employees permanently */
+        clear() {
+            employees = [];
+            _save();
             notifyListeners('reset', null);
         }
     };
 })();
-
-

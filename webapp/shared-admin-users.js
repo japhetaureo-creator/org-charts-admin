@@ -3,11 +3,14 @@
 // =============================================================================
 // Single source of truth for admin/management users who have access to
 // add, edit, and manage organization data. Separate from SharedEmployeeStore.
+// Data is persisted to localStorage so user accounts survive page refreshes.
+// On the very first run (empty localStorage), a default Super Admin is seeded.
 // =============================================================================
 
 const SharedAdminUserStore = (() => {
-    // ── Seed data ─────────────────────────────────────────────────────────
-    let users = [
+    const STORAGE_KEY = 'orgchart_admin_users';
+
+    const SEED_USERS = [
         {
             id: 'adm_001',
             name: 'Super Admin',
@@ -20,6 +23,27 @@ const SharedAdminUserStore = (() => {
             avatar: 'https://ui-avatars.com/api/?name=Super+Admin&background=6366f1&color=fff&bold=true&size=128'
         }
     ];
+
+    // ── Persistence helpers ───────────────────────────────────────────────
+    function _load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) return JSON.parse(raw);
+        } catch { /* fall through to seed */ }
+        // First run: seed default admin and persist
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_USERS));
+        return SEED_USERS.map(u => ({ ...u }));
+    }
+
+    function _save() {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+        } catch (e) {
+            console.error('SharedAdminUserStore: failed to save to localStorage', e);
+        }
+    }
+
+    let users = _load();
 
     // ── Change listeners ──────────────────────────────────────────────────
     const listeners = [];
@@ -53,8 +77,8 @@ const SharedAdminUserStore = (() => {
                 avatar: data.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name || 'New')}&background=6366f1&color=fff&bold=true&size=128`
             };
             users.unshift(user);
+            _save();
 
-            // Log the event
             if (typeof SharedLogStore !== 'undefined') {
                 SharedLogStore.add({
                     type: 'audit',
@@ -76,8 +100,8 @@ const SharedAdminUserStore = (() => {
             if (idx === -1) return null;
             const oldData = { ...users[idx] };
             users[idx] = { ...users[idx], ...data };
+            _save();
 
-            // Only log if meaningful (non-silent) fields changed
             const changedFields = Object.keys(data).filter(key => data[key] !== oldData[key] && !SILENT_FIELDS.has(key));
 
             if (changedFields.length > 0 && typeof SharedLogStore !== 'undefined') {
@@ -110,8 +134,8 @@ const SharedAdminUserStore = (() => {
             const user = users.find(u => u.id === id);
             if (!user) return null;
             users = users.filter(u => u.id !== id);
+            _save();
 
-            // Log the event
             if (typeof SharedLogStore !== 'undefined') {
                 SharedLogStore.add({
                     type: 'delete',
@@ -129,9 +153,8 @@ const SharedAdminUserStore = (() => {
 
         setAll(data) {
             users = data;
+            _save();
             notifyListeners('reset', null);
         }
     };
 })();
-
-
