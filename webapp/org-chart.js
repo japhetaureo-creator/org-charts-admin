@@ -48,6 +48,18 @@ function _ocLoadHierarchy() {
     const stored = localStorage.getItem(_OC_HIERARCHY_KEY);
     if (!stored) return false;
     hierarchy.innerHTML = stored;
+
+    // Migration: if any org-card is a DIRECT child of the hierarchy div (no wrapper),
+    // wrap it in .flex.flex-col.items-center so child-adding works correctly.
+    [...hierarchy.children].forEach(el => {
+        if (el.classList.contains('org-card')) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex flex-col items-center';
+            hierarchy.insertBefore(wrapper, el);
+            wrapper.appendChild(el);
+        }
+    });
+
     _ocReattachListeners();
     return true;
 }
@@ -1014,8 +1026,8 @@ function _ocSelectEmployee(emp) {
             }
         }
     } else {
-        // Top-level / CEO replacement (simple replacement for demo)
-        hierarchy.innerHTML = cardHTML;
+        // Top-level card — wrap in flex-col container so children can be appended later
+        hierarchy.innerHTML = `<div class="flex flex-col items-center">${cardHTML}</div>`;
 
         // Log the event
         if (typeof SharedLogStore !== 'undefined') {
