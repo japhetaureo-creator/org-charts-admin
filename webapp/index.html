@@ -905,15 +905,7 @@
                                         <select id="ed-filter-dept"
                                             class="form-select w-full appearance-none rounded-lg border border-[#e5e7eb] dark:border-[#3b4754] bg-[#f9fafb] dark:bg-[#111418] text-[#111418] dark:text-white h-12 px-4 pr-10 text-sm focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all cursor-pointer">
                                             <option value="">All Departments</option>
-                                            <option value="Operations - LCL">Operations - LCL</option>
-                                            <option value="Operations - LCL/AIR">Operations - LCL/AIR</option>
-                                            <option value="Pricing">Pricing</option>
-                                            <option value="Procurement">Procurement</option>
-                                            <option value="Warehouse">Warehouse</option>
-                                            <option value="Domestic">Domestic</option>
-                                            <option value="Civil">Civil</option>
-                                            <option value="Marketing">Marketing</option>
-                                            <option value="Finance">Finance</option>
+                                            <!-- Populated dynamically by DepartmentStore -->
                                         </select>
                                         <span
                                             class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#9dabb9] pointer-events-none">expand_more</span>
@@ -1093,15 +1085,7 @@
                                 for="ed-field-dept">Department</label>
                             <select id="ed-field-dept"
                                 class="form-select w-full appearance-none rounded-lg border border-[#e5e7eb] dark:border-[#3b4754] bg-[#f9fafb] dark:bg-[#111418] text-[#111418] dark:text-white h-10 px-3 text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-all cursor-pointer">
-                                <option value="Operations - LCL">Operations - LCL</option>
-                                <option value="Operations - LCL/AIR">Operations - LCL/AIR</option>
-                                <option value="Pricing">Pricing</option>
-                                <option value="Procurement">Procurement</option>
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Domestic">Domestic</option>
-                                <option value="Civil">Civil</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Finance">Finance</option>
+                                <!-- Populated dynamically by DepartmentStore -->
                             </select>
                         </div>
                         <div>
@@ -2018,6 +2002,9 @@
                 <button class="settings-tab" data-tab="empfields">
                     <span class="material-symbols-outlined">view_column</span>Employee Fields
                 </button>
+                <button class="settings-tab" data-tab="departments">
+                    <span class="material-symbols-outlined">category</span>Departments
+                </button>
                 <button class="settings-tab" data-tab="appearance">
                     <span class="material-symbols-outlined">palette</span>Appearance
                 </button>
@@ -2162,6 +2149,32 @@
                     </button>
                 </div>
 
+                <!-- Departments -->
+                <div class="settings-panel" id="stab-departments">
+                    <h2 class="settings-panel-title">Departments</h2>
+                    <p class="settings-panel-desc">Manage departments used in the Employee Directory and org chart
+                        filters. Changes take effect immediately.</p>
+
+                    <div class="settings-field">
+                        <label class="settings-label">Add Department</label>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <input id="dept-name-input" type="text" placeholder="e.g. Customer Support"
+                                class="settings-input" style="flex:1;margin:0;" />
+                            <button id="dept-add-btn" class="int-btn-primary" style="white-space:nowrap;flex-shrink:0;">
+                                <span class="material-symbols-outlined !text-base">add</span>Add
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="settings-field">
+                        <label class="settings-label">Current Departments <span id="dept-count"
+                                style="font-weight:400;color:#9dabb9;"></span></label>
+                        <div id="dept-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Appearance -->
                 <div class="settings-panel" id="stab-appearance">
                     <h2 class="settings-panel-title">Appearance</h2>
@@ -2262,6 +2275,7 @@
         <script src="shared-employees.js?v=3"></script>
         <script src="shared-admin-users.js?v=3"></script>
         <script src="shared-logs.js?v=3"></script>
+        <script src="shared-departments.js?v=1"></script>
         <script src="notification-store.js?v=1"></script>
         <script src="auth.js?v=1"></script>
         <script src="monday-integration.js?v=3"></script>

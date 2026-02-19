@@ -702,8 +702,35 @@ const EmployeeDirectory = (() => {
         showToast(`Successfully imported ${added} employee${added !== 1 ? 's' : ''}`, 'success');
     }
 
+    function populateDeptDropdowns(preserveFilter) {
+        const depts = (typeof DepartmentStore !== 'undefined') ? DepartmentStore.getAll() : [];
+
+        // Filter dropdown
+        const filterSel = document.getElementById('ed-filter-dept');
+        if (filterSel) {
+            const prev = filterSel.value;
+            filterSel.innerHTML = '<option value="">All Departments</option>' +
+                depts.map(d => `<option value="${d}">${d}</option>`).join('');
+            if (preserveFilter && depts.includes(prev)) filterSel.value = prev;
+        }
+
+        // Add/Edit modal dropdown
+        const formSel = document.getElementById('ed-field-dept');
+        if (formSel) {
+            const curr = formSel.value;
+            formSel.innerHTML = '<option value="">— select —</option>' +
+                depts.map(d => `<option value="${d}">${d}</option>`).join('');
+            if (depts.includes(curr)) formSel.value = curr;
+        }
+    }
+
     function init() {
-        // Search
+        // Populate department dropdowns from DepartmentStore
+        populateDeptDropdowns(false);
+        if (typeof DepartmentStore !== 'undefined') {
+            DepartmentStore.onChange(() => populateDeptDropdowns(true));
+        }
+
         const searchInput = document.getElementById('ed-search');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => {

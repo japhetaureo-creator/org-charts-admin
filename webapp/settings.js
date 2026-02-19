@@ -379,6 +379,73 @@ const SettingsPageUI = (() => {
             AppSettings.save({ notifications: prefs });
             flashSaved('settings-save-notifications');
         });
+
+        // ── Departments ──────────────────────────────────────────────────────
+        initDepartments();
+    }
+
+    function initDepartments() {
+        if (typeof DepartmentStore === 'undefined') return;
+
+        function renderDeptList() {
+            const list = document.getElementById('dept-list');
+            const countEl = document.getElementById('dept-count');
+            if (!list) return;
+            const depts = DepartmentStore.getAll();
+            if (countEl) countEl.textContent = `(${depts.length})`;
+            if (depts.length === 0) {
+                list.innerHTML = '<p style="color:#9dabb9;font-size:0.875rem;">No departments yet. Add one above.</p>';
+                return;
+            }
+            list.innerHTML = depts.map(d => `
+                <span style="
+                    display:inline-flex;align-items:center;gap:6px;
+                    background:var(--color-card,#1c2127);border:1px solid var(--color-border,#3b4754);
+                    border-radius:9999px;padding:4px 12px;font-size:0.8125rem;
+                    color:var(--color-text,#e2e8f0);
+                ">
+                    ${d}
+                    <button class="dept-remove-btn" data-name="${d}" style="
+                        background:none;border:none;cursor:pointer;padding:0;
+                        color:#9dabb9;display:flex;align-items:center;
+                        font-size:1rem;line-height:1;
+                    " title="Remove ${d}">
+                        <span class="material-symbols-outlined" style="font-size:14px;">close</span>
+                    </button>
+                </span>
+            `).join('');
+
+            list.querySelectorAll('.dept-remove-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    DepartmentStore.remove(btn.dataset.name);
+                    renderDeptList();
+                });
+            });
+        }
+
+        // Initial render
+        renderDeptList();
+
+        // Add button
+        const addBtn = document.getElementById('dept-add-btn');
+        const input = document.getElementById('dept-name-input');
+        function handleAdd() {
+            const val = (input?.value || '').trim();
+            if (!val) return;
+            const ok = DepartmentStore.add(val);
+            if (ok) {
+                if (input) input.value = '';
+                renderDeptList();
+            } else {
+                // Duplicate - briefly flash input red
+                if (input) {
+                    input.style.borderColor = '#f87171';
+                    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+                }
+            }
+        }
+        addBtn?.addEventListener('click', handleAdd);
+        input?.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } });
     }
 
     function populate() {
