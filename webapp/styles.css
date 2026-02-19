@@ -1327,3 +1327,51 @@ html.light #page-user-management {
 html.light #page-settings {
     background: #f8fafc;
 }
+
+/* =============================================================================
+   Dark-mode form input overrides
+   
+   Root cause: Tailwind Forms plugin (cdn.tailwindcss.com?plugins=forms) injects
+   CSS after this file loads. At equal specificity (0,1,0) it wins, setting
+   background:white on all inputs while our light #e2e8f0 text stays — making
+   typed text invisible on the white background.
+   
+   Fix: html.dark prefix → specificity (0,1,2) beats TailwindForms (0,1,0).
+   Tailwind dark: utilities (.dark .dark\:bg-*) = (0,2,0) > (0,1,2) so
+   element-specific Tailwind overrides still win correctly on each field.
+   ============================================================================= */
+
+/* Baseline for all typeable fields in dark mode */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.12);
+    color-scheme: dark;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #64748b;
+}
+
+/* .settings-input — slightly higher specificity, explicit overrides */
+html.dark .settings-input {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .settings-input:focus {
+    border-color: rgba(99, 102, 241, 0.5);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+}
+
+html.dark .settings-input::placeholder {
+    color: #64748b;
+}
+
+html.light .settings-input::placeholder {
+    color: #94a3b8;
+}
