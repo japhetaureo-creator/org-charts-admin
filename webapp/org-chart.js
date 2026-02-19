@@ -30,7 +30,11 @@ const OrgChartState = {
 let _orgChartInitialized = false;
 
 function initOrgChart() {
-    console.log('Organization Chart initialized');
+    // Update breadcrumb with the saved company name
+    const breadcrumbEl = document.getElementById('oc-breadcrumb-company');
+    if (breadcrumbEl && typeof CompanySettings !== 'undefined') {
+        breadcrumbEl.textContent = CompanySettings.get().name;
+    }
 
     // Load mock employee data
     loadEmployeeData();
