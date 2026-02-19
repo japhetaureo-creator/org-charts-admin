@@ -1,0 +1,13 @@
+name = "monday-proxy"
+main = "monday-proxy.js"
+compatibility_date = "2024-01-01"
+
+# Secrets (set via `wrangler secret put MONDAY_API_TOKEN`)
+# Do NOT put your token here — use the CLI command below.
+
+[vars]
+# Non-sensitive config vars can go here (none needed currently)
+
+# Routes — update this to your Cloudflare zone/domain if using a custom domain
+# Otherwise the Worker will be deployed to:
+# https://monday-proxy.<your-subdomain>.workers.dev

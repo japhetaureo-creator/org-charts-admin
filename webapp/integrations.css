@@ -1,0 +1,551 @@
+/* ============================================================
+   Integrations Page — Monday.com
+   ============================================================ */
+
+#page-integrations {
+    position: absolute;
+    top: 0;
+    left: 256px;
+    /* nav sidebar width */
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    background: var(--bg-primary, #0f1115);
+}
+
+/* ── Page header ─────────────────────────────────────────── */
+
+.integrations-header {
+    padding: 32px 40px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.integrations-header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 4px;
+}
+
+.integrations-header p {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+
+.integrations-body {
+    padding: 32px 40px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+}
+
+@media (max-width: 1100px) {
+    .integrations-body {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Panel cards ─────────────────────────────────────────── */
+
+.int-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 16px;
+    padding: 28px;
+    margin-bottom: 20px;
+}
+
+.int-panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin: 0 0 20px;
+}
+
+.int-panel-title .material-symbols-outlined {
+    font-size: 1.125rem;
+    color: #6366f1;
+}
+
+/* ── Form fields ─────────────────────────────────────────── */
+
+.int-field {
+    margin-bottom: 16px;
+}
+
+.int-field label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #94a3b8;
+    margin-bottom: 6px;
+}
+
+.int-field input,
+.int-field select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+}
+
+.int-field input:focus,
+.int-field select:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.int-field input::placeholder {
+    color: #475569;
+}
+
+.int-field select option {
+    background: #1e2330;
+    color: #e2e8f0;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+
+.int-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.int-btn-primary:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    transform: translateY(-1px);
+}
+
+.int-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.int-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.int-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.int-btn-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.int-btn-danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* ── Connection status badge ─────────────────────────────── */
+
+.int-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 20px;
+}
+
+.int-status-badge.connected {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.int-status-badge.disconnected {
+    background: rgba(148, 163, 184, 0.1);
+    color: #94a3b8;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.int-status-badge.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.int-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.int-status-badge.connected .int-status-dot {
+    animation: int-pulse 2s ease-in-out infinite;
+}
+
+@keyframes int-pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ── Mapping grid ────────────────────────────────────────── */
+
+.int-mapping-grid {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 10px 16px;
+    align-items: center;
+}
+
+.int-mapping-label {
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.int-mapping-required {
+    color: #f87171;
+    margin-left: 2px;
+}
+
+/* ── Sync settings ───────────────────────────────────────── */
+
+.int-sync-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.int-sync-row:last-child {
+    border-bottom: none;
+}
+
+.int-sync-label {
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.int-sync-sublabel {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Toggle switch */
+.int-toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.int-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+
+.int-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.int-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.int-toggle input:checked+.int-toggle-slider {
+    background: #6366f1;
+}
+
+.int-toggle input:checked+.int-toggle-slider::before {
+    transform: translateX(20px);
+}
+
+/* Interval radio group */
+.int-interval-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.int-interval-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #cbd5e1;
+}
+
+.int-interval-option input[type="radio"] {
+    accent-color: #6366f1;
+    width: 16px;
+    height: 16px;
+}
+
+/* ── Stat cards (sidebar) ────────────────────────────────── */
+
+.int-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+
+.int-stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.int-stat-label {
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+/* ── Monday.com logo color ───────────────────────────────── */
+
+.monday-logo-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 2px;
+}
+
+/* ── Spinner ─────────────────────────────────────────────── */
+
+.int-spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: int-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes int-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Alert / info box ────────────────────────────────────── */
+
+.int-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.int-alert.info {
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+}
+
+.int-alert.success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+}
+
+.int-alert.error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.int-alert .material-symbols-outlined {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ── Light mode overrides ─────────────────────────────────────────────────── */
+
+html.light {
+    --bg-primary: #f8fafc;
+}
+
+html.light #page-integrations {
+    background: #f8fafc;
+}
+
+html.light .integrations-header {
+    border-bottom-color: rgba(0, 0, 0, 0.07);
+}
+
+html.light .integrations-header h1 {
+    color: #0f172a;
+}
+
+html.light .integrations-header p,
+html.light .int-panel-title {
+    color: #334155;
+}
+
+html.light .int-panel {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html.light .int-panel-title {
+    color: #1e293b;
+}
+
+html.light .int-field label,
+html.light .int-mapping-label,
+html.light .int-sync-label {
+    color: #475569;
+}
+
+html.light .int-field input,
+html.light .int-field select {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #1e293b;
+}
+
+html.light .int-field select option {
+    background: #fff;
+    color: #1e293b;
+}
+
+html.light .int-field input::placeholder {
+    color: #94a3b8;
+}
+
+html.light .int-sync-row {
+    border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+html.light .int-sync-sublabel {
+    color: #94a3b8;
+}
+
+html.light .int-btn-secondary {
+    background: rgba(0, 0, 0, 0.04);
+    color: #334155;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+html.light .int-btn-secondary:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #0f172a;
+}
+
+html.light .int-stat-card {
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html.light .int-stat-value {
+    color: #0f172a;
+}
+
+html.light .int-stat-label {
+    color: #64748b;
+}
+
+html.light .int-toggle-slider {
+    background: rgba(0, 0, 0, 0.15);
+}
+
+html.light .int-interval-option {
+    color: #334155;
+}
+
+html.light .int-spinner {
+    border-color: rgba(0, 0, 0, 0.15);
+    border-top-color: #6366f1;
+}
+
+/* How it works list */
+html.light .int-steps-title {
+    color: #1e293b;
+}
+
+html.light .int-step-text {
+    color: #475569;
+}

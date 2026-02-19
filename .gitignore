@@ -1,0 +1,12 @@
+# Agent and Architecture Ignore
+.env
+.tmp/
+credentials.json
+token.json
+node_modules/
+.DS_Store
+*.log
+*.bak
+Thumbs.db
+.vscode/
+.idea/

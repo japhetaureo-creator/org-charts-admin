@@ -1,0 +1,1329 @@
+/* Custom styles for the Admin Dashboard */
+
+/* Smooth scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.7);
+}
+
+/* Smooth transitions */
+* {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* Loading animation */
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.loading {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* ── Settings Page Layout ──────────────────────────────────────────────────── */
+
+
+.settings-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 32px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.15);
+    overflow-y: auto;
+}
+
+.settings-sidebar-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0 12px;
+    margin-bottom: 8px;
+}
+
+.settings-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+    width: 100%;
+}
+
+.settings-tab .material-symbols-outlined {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.settings-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+
+.settings-tab.active {
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    font-weight: 600;
+}
+
+.settings-tab-soon {
+    opacity: 0.55;
+}
+
+.settings-soon-badge {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    padding: 2px 6px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+}
+
+.settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 48px;
+    max-width: 680px;
+}
+
+.settings-panel {
+    display: none;
+}
+
+.settings-panel.active {
+    display: block;
+}
+
+.settings-panel-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 4px;
+    color: #f1f5f9;
+}
+
+.settings-panel-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0 0 28px;
+}
+
+.settings-field {
+    margin-bottom: 24px;
+}
+
+.settings-label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.settings-hint {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0 0 10px;
+}
+
+.settings-hint-mt {
+    margin-top: 6px;
+}
+
+.settings-badge-ml-auto {
+    margin-left: auto;
+}
+
+.settings-input {
+    width: 100%;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.9375rem;
+    color: #e2e8f0;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+}
+
+.settings-input:focus {
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.settings-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.settings-logo-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #6366f1;
+}
+
+.settings-favicon-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #1e293b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.settings-card {
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 12px;
+}
+
+.settings-card-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 4px;
+}
+
+.settings-card-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+}
+
+.settings-code {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.settings-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.settings-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    cursor: pointer;
+}
+
+.settings-toggle-row.locked {
+    cursor: default;
+}
+
+.settings-toggle-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #6366f1;
+    flex-shrink: 0;
+}
+
+.settings-toggle-label {
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    flex: 1;
+}
+
+.settings-toggle-label.muted {
+    color: #64748b;
+}
+
+.settings-always-badge {
+    font-size: 0.7rem;
+    color: #64748b;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.settings-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.settings-radio-option:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Integration Cards Grid ──────────────────────────────────────────────── */
+
+.int-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 32px;
+}
+
+.int-app-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 24px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.int-app-card:hover:not(.int-app-card-soon) {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(99, 102, 241, 0.05);
+    transform: translateY(-2px);
+}
+
+.int-app-card-soon {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.int-app-card-logo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 32px;
+    margin-bottom: 4px;
+}
+
+.int-app-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+}
+
+.int-app-card-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.5;
+    flex: 1;
+}
+
+.int-app-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    align-self: flex-start;
+}
+
+.int-app-card-badge.disconnected {
+    background: rgba(100, 116, 139, 0.15);
+    color: #64748b;
+}
+
+.int-app-card-badge.connected {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+}
+
+.int-app-card-badge.connected::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+}
+
+.int-app-card-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    border: none;
+    background: rgba(99, 102, 241, 0.15);
+    color: #818cf8;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    margin-top: 4px;
+}
+
+.int-app-card-btn:hover {
+    background: rgba(99, 102, 241, 0.3);
+    color: #c7d2fe;
+}
+
+.int-app-card-btn.configure {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+
+.int-app-card-btn.configure:hover {
+    background: rgba(34, 197, 94, 0.22);
+    color: #4ade80;
+}
+
+/* ── Connect Modal ───────────────────────────────────────────────────────── */
+
+.int-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.int-modal-box {
+    background: #1a2236;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    padding: 28px;
+    box-shadow: 0 32px 64px rgba(0, 0, 0, 0.5);
+}
+
+.int-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+}
+
+.int-modal-logo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.int-modal-title-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-left: 8px;
+}
+
+.int-modal-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    color: #64748b;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.int-modal-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #e2e8f0;
+}
+
+.int-field-hint {
+    font-size: 0.75rem;
+    color: #475569;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.int-modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+#page-settings {
+    display: none;
+    /* hidden by default; JS adds .page-settings-visible to show */
+    flex-direction: row;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+}
+
+#page-settings.page-settings-visible {
+    display: flex;
+}
+
+.settings-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.07);
+    padding: 28px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.01);
+    overflow-y: auto;
+}
+
+.settings-sidebar-label {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #475569;
+    padding: 0 10px;
+    margin-bottom: 10px;
+}
+
+.settings-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s, color 0.15s;
+}
+
+.settings-tab .material-symbols-outlined {
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.settings-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+
+.settings-tab.active {
+    background: rgba(99, 102, 241, 0.12);
+    color: #818cf8;
+    font-weight: 600;
+}
+
+.settings-tab-soon {
+    opacity: 0.5;
+    cursor: default;
+    pointer-events: none;
+}
+
+.settings-soon-badge {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.12);
+    color: #64748b;
+    letter-spacing: 0.04em;
+}
+
+.settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 40px 48px;
+}
+
+/* ── Settings Panels (tab content) ─────────────────────────────────────────── */
+
+.settings-panel {
+    display: none;
+}
+
+.settings-panel.active {
+    display: block;
+}
+
+.settings-panel-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0 0 6px;
+}
+
+.settings-panel-desc {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0 0 28px;
+}
+
+/* ── Settings Form Elements ─────────────────────────────────────────────────── */
+
+.settings-field {
+    margin-bottom: 28px;
+}
+
+.settings-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+}
+
+.settings-hint {
+    font-size: 0.8125rem;
+    color: #475569;
+    margin: 0 0 8px;
+}
+
+.settings-input {
+    width: 100%;
+    max-width: 440px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    color: #e2e8f0;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.settings-input:focus {
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.settings-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.settings-logo-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.settings-favicon-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 14px;
+    padding: 20px 24px;
+    max-width: 540px;
+}
+
+.settings-card-title {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin-bottom: 6px;
+}
+
+.settings-card-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.settings-code {
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: #94a3b8;
+}
+
+.settings-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 400px;
+}
+
+.settings-toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.settings-toggle-row:hover {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-toggle-row.locked {
+    cursor: default;
+}
+
+.settings-toggle-label {
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    flex: 1;
+}
+
+.settings-toggle-label.muted {
+    color: #475569;
+}
+
+.settings-always-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.1);
+    color: #475569;
+}
+
+.settings-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.settings-radio-option:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.05);
+}
+
+/* ── Monday logo dots ──────────────────────────────────────────────────────── */
+
+.monday-logo-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.monday-logo-dot--sm {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.monday-logo-dot--red {
+    background: #f62b54;
+}
+
+.monday-logo-dot--yellow {
+    background: #ffcb00;
+}
+
+.monday-logo-dot--green {
+    background: #00ca72;
+}
+
+/* ── Integrations: card icon ───────────────────────────────────────────────── */
+
+.int-card-connect-icon {
+    font-size: 16px;
+}
+
+/* ── Integrations: "more coming" card ─────────────────────────────────────── */
+
+.int-card-soon-logo {
+    font-size: 1.5rem;
+}
+
+.int-card-soon-name {
+    color: #475569;
+}
+
+.int-card-soon-badge {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+}
+
+/* ── Integrations: hidden-by-default elements (shown by JS) ───────────────── */
+
+.int-hidden {
+    display: none;
+}
+
+/* ── Integrations: modal logo row ──────────────────────────────────────────── */
+
+.int-modal-logo-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+/* ── Integrations: field mapping description ──────────────────────────────── */
+
+.int-mapping-desc {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: -8px 0 20px;
+}
+
+.int-mapping-required {
+    color: #f87171;
+}
+
+/* ── Integrations: group filter section ────────────────────────────────────── */
+
+.int-group-filter-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.int-group-filter-hint {
+    font-size: 0.8125rem;
+    color: #64748b;
+    margin: 0 0 12px;
+}
+
+.int-group-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ── Integrations: stat sidebar ─────────────────────────────────────────────  */
+
+.int-stat-card--monday {
+    background: linear-gradient(135deg, rgba(246, 43, 84, 0.08), rgba(246, 43, 84, 0.03));
+    border-color: rgba(246, 43, 84, 0.2);
+}
+
+.int-stat-monday-logo {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.int-stat-monday-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* ── Integrations: "how it works" card ────────────────────────────────────── */
+
+.int-how-it-works-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #e2e8f0;
+    margin: 0 0 16px;
+}
+
+.int-how-it-works-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.int-how-it-works-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.int-how-it-works-step {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(99, 102, 241, 0.2);
+    color: #818cf8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.int-how-it-works-text {
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    line-height: 1.5;
+}
+
+/* ── Integrations: deploy guide card ──────────────────────────────────────── */
+
+.int-deploy-card {
+    text-align: center;
+}
+
+.int-deploy-card-icon {
+    font-size: 2rem;
+    color: #6366f1;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.int-deploy-card-hint {
+    font-size: 0.8125rem;
+    color: #94a3b8;
+    margin: 0 0 12px;
+}
+
+.int-deploy-card-link {
+    display: inline-flex;
+    text-decoration: none;
+}
+
+/* ── Settings: layout helpers ──────────────────────────────────────────────── */
+
+.settings-radio-flex {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.settings-radio-accent {
+    accent-color: #6366f1;
+}
+
+.settings-upload-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.settings-file-input {
+    display: none;
+}
+
+.settings-logo-clear {
+    display: none;
+    margin-left: 10px;
+    background: none;
+    border: none;
+    color: #f87171;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.settings-hint--mt {
+    margin-top: 6px;
+}
+
+.settings-hint--mb {
+    margin: 8px 0 16px;
+}
+
+.settings-card--mb {
+    margin-bottom: 16px;
+}
+
+.settings-card-action {
+    margin-top: 16px;
+}
+
+.settings-toggle-list--mb {
+    margin-bottom: 28px;
+}
+
+.settings-alert {
+    display: none;
+    margin-bottom: 20px;
+}
+
+.settings-favicon-icon {
+    color: #64748b;
+    font-size: 20px;
+}
+
+/* ── Settings: notifications disabled state ────────────────────────────────── */
+
+.settings-notifications-disabled {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.settings-notifications-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.875rem;
+    color: #475569;
+}
+
+.settings-notifications-checkbox {
+    width: 16px;
+    height: 16px;
+}
+
+.settings-soon-badge--inline {
+    vertical-align: middle;
+    margin-left: 8px;
+    font-size: 0.7rem;
+}
+
+/* ── Settings: import result ───────────────────────────────────────────────── */
+
+.settings-import-result {
+    display: none;
+    margin-top: 12px;
+    font-size: 0.8125rem;
+    color: #94a3b8;
+}
+
+/* ── Org Chart header logo ───────────────────────────────────────────────── */
+
+.oc-header-logo {
+    height: 32px;
+    width: auto;
+    filter: brightness(0) invert(1);
+    object-fit: contain;
+}
+
+html.light .oc-header-logo {
+    filter: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIGHT MODE — Global overrides
+   Applied when html.light is present (set by AppSettings.applyTheme)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Settings sidebar + tabs ─────────────────────────────────────────────── */
+html.light .settings-sidebar {
+    background: rgba(0, 0, 0, 0.02);
+    border-right-color: rgba(0, 0, 0, 0.08);
+}
+
+html.light .settings-tab {
+    color: #475569;
+}
+
+html.light .settings-tab:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: #1e293b;
+}
+
+html.light .settings-tab.active {
+    background: rgba(99, 102, 241, 0.1);
+    color: #4f46e5;
+}
+
+/* ── Settings panel text ─────────────────────────────────────────────────── */
+html.light .settings-panel-title {
+    color: #0f172a;
+}
+
+html.light .settings-label {
+    color: #64748b;
+}
+
+html.light .settings-toggle-label {
+    color: #1e293b;
+}
+
+html.light .settings-card-title {
+    color: #1e293b;
+}
+
+html.light .settings-always-badge {
+    background: rgba(0, 0, 0, 0.05);
+    color: #64748b;
+}
+
+/* ── Settings form inputs ────────────────────────────────────────────────── */
+html.light .settings-input {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+
+html.light .settings-logo-preview,
+html.light .settings-favicon-preview {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+}
+
+/* ── Settings toggle rows (OC Fields, ED Fields) ─────────────────────────── */
+html.light .settings-toggle-row {
+    background: #ffffff;
+    border-color: #e5e7eb;
+}
+
+html.light .settings-toggle-row:hover {
+    background: #f8fafc;
+}
+
+/* ── Settings radio options (theme picker, layout) ───────────────────────── */
+html.light .settings-radio-option {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+
+html.light .settings-radio-option:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+html.light .settings-card {
+    background: #ffffff;
+    border-color: #e5e7eb;
+}
+
+html.light .settings-code {
+    background: rgba(0, 0, 0, 0.05);
+    color: #475569;
+}
+
+/* ── Integration app cards (grid on page) ────────────────────────────────── */
+html.light .int-app-card {
+    background: #ffffff;
+    border-color: #e5e7eb;
+}
+
+html.light .int-app-card:hover:not(.int-app-card-soon) {
+    border-color: rgba(99, 102, 241, 0.3);
+    background: rgba(99, 102, 241, 0.03);
+}
+
+html.light .int-app-card-name {
+    color: #0f172a;
+}
+
+/* ── Integration connect modal ───────────────────────────────────────────── */
+html.light .int-modal-box {
+    background: #ffffff;
+    border-color: #e2e8f0;
+}
+
+html.light .int-modal-title-text {
+    color: #0f172a;
+}
+
+html.light .int-modal-close-btn {
+    background: rgba(0, 0, 0, 0.05);
+    color: #64748b;
+}
+
+html.light .int-modal-close-btn:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1e293b;
+}
+
+/* ── Org chart sidebar dividers ──────────────────────────────────────────── */
+html.light #page-org-chart .bg-slate-700\/50 {
+    background-color: #e2e8f0 !important;
+}
+
+/* Reset Filters button */
+html.light #oc-reset-filters {
+    background: rgba(0, 0, 0, 0.05);
+    color: #475569;
+    border-color: #d1d5db;
+}
+
+html.light #oc-reset-filters:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: #1e293b;
+}
+
+/* ── Org chart filter checkboxes (form-checkbox dark boxes) ──────────────── */
+html.light #page-org-chart input[type="checkbox"] {
+    background: #ffffff;
+    border-color: #d1d5db;
+}
+
+/* ── Nav sidebar (hardcoded in HTML with dark: Tailwind) ─────────────────── */
+/* The sidebar uses Tailwind dark: classes — adding fallbacks for light */
+html.light nav,
+html.light aside#main-sidebar {
+    background: #ffffff !important;
+    border-color: #e5e7eb !important;
+}
+
+/* System health footer */
+html.light .system-health-section {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border-color: #e5e7eb !important;
+}
+
+/* ── Light: Integrations sidebar (How it works, monday branding, deploy card) */
+html.light .int-stat-monday-name {
+    color: #0f172a;
+}
+
+html.light .int-how-it-works-title {
+    color: #1e293b;
+}
+
+html.light .int-how-it-works-text {
+    color: #475569;
+}
+
+html.light .int-deploy-card-hint {
+    color: #64748b;
+}
+
+/* ── Light: settings-panel-desc ─────────────────────────────────────────────── */
+html.light .settings-panel-desc {
+    color: #475569;
+}
+
+html.light .settings-hint {
+    color: #64748b;
+}
+
+/* ── Light: Employee Directory background + table ────────────────────────────── */
+html.light #page-employee-directory {
+    background: #f8fafc;
+}
+
+/* ── Light: Dashboard / Main pages ──────────────────────────────────────────── */
+html.light #page-main,
+html.light .main-content-area {
+    background: #f8fafc;
+}
+
+/* ── Light: Company Profile page ────────────────────────────────────────────── */
+html.light #page-company-profile {
+    background: #f8fafc;
+}
+
+/* ── Light: User Management page ────────────────────────────────────────────── */
+html.light #page-user-management {
+    background: #f8fafc;
+}
+
+/* ── Light: Settings page ────────────────────────────────────────────────────── */
+html.light #page-settings {
+    background: #f8fafc;
+}
