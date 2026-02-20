@@ -118,21 +118,30 @@ function _ocSaveHierarchy() {
     const tree = _ocExtractTree(hierarchy);
     if (tree.length === 0) {
         localStorage.removeItem(_OC_HIERARCHY_KEY);
+        // Also clear from Firestore
+        const db = window.firebaseDb;
+        if (db) db.doc('settings/hierarchy').delete().catch(() => { });
         return;
     }
     try {
         const json = JSON.stringify(tree);
         localStorage.setItem(_OC_HIERARCHY_KEY, json);
     } catch (e) {
-        // Quota exceeded — trim logs and retry once
         console.warn('[OC-SAVE] Quota exceeded, trimming logs and retrying...');
         if (typeof SharedLogStore !== 'undefined') SharedLogStore.clear();
-        localStorage.removeItem('orgchart_hierarchy_v1'); // remove old bloated key
+        localStorage.removeItem('orgchart_hierarchy_v1');
         try {
             localStorage.setItem(_OC_HIERARCHY_KEY, JSON.stringify(tree));
         } catch (e2) {
             console.error('[OC-SAVE] Still failed after cleanup:', e2);
         }
+    }
+    // Save to Firestore (fire and forget)
+    const db = window.firebaseDb;
+    if (db) {
+        db.doc('settings/hierarchy').set({ tree: tree }).catch(e =>
+            console.error('[OC-SAVE] Firestore write failed:', e)
+        );
     }
 }
 
@@ -140,7 +149,6 @@ function _ocLoadHierarchy() {
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     if (!hierarchy) return false;
 
-    // Clean up old v1 innerHTML key (saves space)
     localStorage.removeItem('orgchart_hierarchy_v1');
 
     const stored = localStorage.getItem(_OC_HIERARCHY_KEY);
@@ -157,6 +165,43 @@ function _ocLoadHierarchy() {
         return false;
     }
 }
+
+/** Sync hierarchy from Firestore → localStorage → DOM (called after Firestore is ready) */
+async function _ocSyncHierarchyFromFirestore() {
+    const db = window.firebaseDb;
+    if (!db) return;
+    try {
+        const doc = await db.doc('settings/hierarchy').get();
+        if (doc.exists && doc.data().tree) {
+            const tree = doc.data().tree;
+            localStorage.setItem(_OC_HIERARCHY_KEY, JSON.stringify(tree));
+            console.log('[OC-SYNC] Loaded hierarchy from Firestore');
+            // Re-render if the org chart tab is active
+            const hierarchy = document.getElementById('oc-chart-hierarchy');
+            if (hierarchy) {
+                hierarchy.innerHTML = '';
+                _ocBuildTree(tree, hierarchy);
+                _ocReattachListeners();
+            }
+        } else {
+            // Upload local hierarchy to Firestore if exists
+            const stored = localStorage.getItem(_OC_HIERARCHY_KEY);
+            if (stored) {
+                const tree = JSON.parse(stored);
+                if (Array.isArray(tree) && tree.length > 0) {
+                    console.log('[OC-SYNC] Uploading local hierarchy to Firestore');
+                    await db.doc('settings/hierarchy').set({ tree: tree });
+                }
+            }
+        }
+    } catch (e) {
+        console.error('[OC-SYNC] Firestore hierarchy sync failed:', e);
+    }
+}
+
+// Auto-sync hierarchy after a delay to let other stores init first
+setTimeout(() => _ocSyncHierarchyFromFirestore(), 1200);
+
 
 
 

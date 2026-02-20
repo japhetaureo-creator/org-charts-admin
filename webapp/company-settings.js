@@ -1,9 +1,12 @@
 /**
  * CompanySettings — manages company name, logo, and favicon.
- * Persists to localStorage. Applies changes live to the sidebar and browser.
+ * Primary storage: Firestore document 'settings/company'
+ * Fallback: localStorage cache.
+ * Applies changes live to the sidebar and browser.
  */
 const CompanySettings = (() => {
     const STORAGE_KEY = 'orgchart_company_settings';
+    const DOC_PATH = 'settings/company';
 
     const DEFAULTS = {
         name: 'Acme Corp',
@@ -11,25 +14,62 @@ const CompanySettings = (() => {
         faviconDataUrl: '',
     };
 
-    // ── Persistence ───────────────────────────────────────────────────────────
+    // ── Firestore helpers ─────────────────────────────────────────────────
+    function _getDb() { return window.firebaseDb || null; }
+    function _docRef() { const db = _getDb(); return db ? db.doc(DOC_PATH) : null; }
 
-    function load() {
+    // ── localStorage helpers ─────────────────────────────────────────────
+    function loadLocal() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : { ...DEFAULTS };
-        } catch {
-            return { ...DEFAULTS };
+        } catch { return { ...DEFAULTS }; }
+    }
+
+    function saveLocal(settings) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(settings)); }
+        catch (e) { console.error('CompanySettings: localStorage save failed', e); }
+    }
+
+    // ── Firestore persistence ────────────────────────────────────────────
+    async function _firestoreSave(patch) {
+        const ref = _docRef();
+        if (!ref) return;
+        try { await ref.set(patch, { merge: true }); }
+        catch (e) { console.error('[CompanySettings] Firestore write failed:', e); }
+    }
+
+    async function _syncFromFirestore() {
+        const ref = _docRef();
+        if (!ref) return;
+        try {
+            const doc = await ref.get();
+            if (doc.exists) {
+                const remote = { ...DEFAULTS, ...doc.data() };
+                saveLocal(remote);
+                applyAll(remote);
+                console.log('[CompanySettings] Loaded from Firestore:', remote.name);
+            } else {
+                // First run — push local settings to Firestore
+                const local = loadLocal();
+                console.log('[CompanySettings] Firestore empty, uploading local settings');
+                await ref.set(local);
+            }
+        } catch (e) {
+            console.error('[CompanySettings] Firestore sync failed:', e);
         }
     }
 
+    // ── Save helper (localStorage + Firestore) ──────────────────────────
     function save(patch) {
-        const current = load();
+        const current = loadLocal();
         const updated = { ...current, ...patch };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        saveLocal(updated);
+        _firestoreSave(updated); // async fire-and-forget
         return updated;
     }
 
-    // ── Apply to DOM ──────────────────────────────────────────────────────────
+    // ── Apply to DOM ──────────────────────────────────────────────────────
 
     function applyAll(settings) {
         applyName(settings.name);
@@ -39,12 +79,8 @@ const CompanySettings = (() => {
 
     function applyName(name) {
         const display = name || DEFAULTS.name;
-
-        // Sidebar company name
         const h1 = document.querySelector('aside h1');
         if (h1) h1.textContent = display;
-
-        // Browser tab title
         document.title = `${display} — Admin Console`;
     }
 
@@ -57,11 +93,10 @@ const CompanySettings = (() => {
             logoEl.style.backgroundPosition = 'center';
             logoEl.textContent = '';
         } else {
-            // Fallback: show first letter of company name
             logoEl.style.backgroundImage = '';
             logoEl.style.backgroundSize = '';
             logoEl.style.backgroundPosition = '';
-            const displayName = name || load().name || DEFAULTS.name;
+            const displayName = name || loadLocal().name || DEFAULTS.name;
             logoEl.textContent = displayName.charAt(0).toUpperCase();
             logoEl.style.display = 'flex';
             logoEl.style.alignItems = 'center';
@@ -83,27 +118,19 @@ const CompanySettings = (() => {
         link.href = dataUrl || 'favicon.ico';
     }
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    // ── Public API ────────────────────────────────────────────────────────
 
-    /**
-     * Call once on app load to apply saved settings.
-     */
     function init() {
-        applyAll(load());
+        applyAll(loadLocal());
+        // After DOM applies local cache, sync from Firestore for latest
+        setTimeout(() => _syncFromFirestore(), 900);
     }
 
-    /**
-     * Update company name, save, and apply.
-     */
     function setName(name) {
         const s = save({ name });
         applyName(s.name);
     }
 
-    /**
-     * Update logo from a File object, save as base64, and apply.
-     * Returns a Promise that resolves when done.
-     */
     function setLogo(file) {
         return new Promise((resolve, reject) => {
             if (!file) {
@@ -123,9 +150,6 @@ const CompanySettings = (() => {
         });
     }
 
-    /**
-     * Update favicon from a File object, save as base64, and apply.
-     */
     function setFavicon(file) {
         return new Promise((resolve, reject) => {
             if (!file) {
@@ -145,7 +169,7 @@ const CompanySettings = (() => {
         });
     }
 
-    function get() { return load(); }
+    function get() { return loadLocal(); }
 
     return { init, get, setName, setLogo, setFavicon, applyAll };
 })();

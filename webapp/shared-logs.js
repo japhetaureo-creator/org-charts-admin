@@ -1,45 +1,41 @@
 // =============================================================================
-// Shared Log Data Store
+// Shared Log Data Store — Firestore-backed
 // =============================================================================
-// Centralized store for audit logs and organizational changes.
+// Centralized store for audit logs. Primary: Firestore, Fallback: localStorage.
 // Used by the Company Profile "Activity Feed" to show real-time history.
-// Data is persisted to localStorage so logs survive page refreshes.
 // =============================================================================
 
 const SharedLogStore = (() => {
     const STORAGE_KEY = 'orgchart_logs';
+    const COLLECTION = 'logs';
+    const MAX_LOGS = 50;
 
-    // ── Persistence helpers ───────────────────────────────────────────────
-    function _load() {
+    // ── Firestore helpers ─────────────────────────────────────────────────
+    function _getDb() { return window.firebaseDb || null; }
+    function _collection() { const db = _getDb(); return db ? db.collection(COLLECTION) : null; }
+
+    // ── localStorage helpers ─────────────────────────────────────────────
+    function _loadLocal() {
         try {
             const raw = localStorage.getItem(STORAGE_KEY);
             return raw ? JSON.parse(raw) : [];
-        } catch {
-            return [];
-        }
+        } catch { return []; }
     }
 
-    function _save() {
+    function _saveLocal() {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
         } catch (e) {
-            // Quota exceeded — trim to 10 entries and retry
             if (e.name === 'QuotaExceededError' || e.code === 22) {
                 logs = logs.slice(0, 10);
-                try {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
-                } catch (e2) {
-                    console.error('SharedLogStore: still cannot save after trimming', e2);
-                }
-            } else {
-                console.error('SharedLogStore: failed to save to localStorage', e);
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); }
+                catch { /* give up */ }
             }
         }
     }
 
-    // ── Audit Logs ───────────────────────────────────────────────────────
-    // Load from localStorage on startup; starts empty on first run.
-    let logs = _load();
+    // ── State ─────────────────────────────────────────────────────────────
+    let logs = _loadLocal();
 
     // ── Change listeners ─────────────────────────────────────────────────
     const listeners = [];
@@ -51,23 +47,44 @@ const SharedLogStore = (() => {
         });
     }
 
-    // ── Public API ───────────────────────────────────────────────────────
-    return {
-        /** Register a callback: fn(action, data) */
-        onChange(fn) {
-            listeners.push(fn);
-        },
+    // ── Firestore sync ───────────────────────────────────────────────────
+    async function _syncFromFirestore() {
+        const col = _collection();
+        if (!col) return;
+        try {
+            const snapshot = await col.orderBy('timestamp', 'desc').limit(MAX_LOGS).get();
+            if (!snapshot.empty) {
+                logs = [];
+                snapshot.forEach(doc => {
+                    logs.push({ id: doc.id, ...doc.data() });
+                });
+                console.log('[LogStore] Loaded', logs.length, 'logs from Firestore');
+            } else if (logs.length > 0) {
+                // Push local logs to Firestore on first run
+                console.log('[LogStore] Firestore empty, uploading', logs.length, 'local logs');
+                for (const log of logs) {
+                    await col.doc(log.id).set(log);
+                }
+            }
+            _saveLocal();
+            notifyListeners('sync', null);
+        } catch (e) {
+            console.error('[LogStore] Firestore sync failed:', e);
+        }
+    }
 
-        /** Get all logs (returns a copy, latest first) */
+    // ── Public API ───────────────────────────────────────────────────────
+    const store = {
+        onChange(fn) { listeners.push(fn); },
+
         getAll() {
             return [...logs].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         },
 
-        /** Add a new log entry */
         add(data) {
             const log = {
                 id: 'log_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
-                type: data.type || 'info', // audit, hire, update, delete, hierarchy, sync
+                type: data.type || 'info',
                 user: {
                     name: data.userName || (typeof AuthStore !== 'undefined' && AuthStore.getSession()?.name) || 'System',
                     avatar: data.userAvatar || (typeof AuthStore !== 'undefined' && AuthStore.getSession()?.avatar) || null
@@ -81,20 +98,39 @@ const SharedLogStore = (() => {
             };
 
             logs.unshift(log);
+            if (logs.length > MAX_LOGS) logs.pop();
+            _saveLocal();
 
-            // Cap at 30 logs to prevent localStorage bloat
-            if (logs.length > 30) logs.pop();
+            // Write to Firestore (fire and forget)
+            const col = _collection();
+            if (col) {
+                col.doc(log.id).set(log).catch(e =>
+                    console.error('[LogStore] Firestore write failed:', e)
+                );
+            }
 
-            _save();
             notifyListeners('add', log);
             return log;
         },
 
-        /** Clear all logs */
         clear() {
             logs = [];
-            _save();
+            _saveLocal();
+            // Clear Firestore logs (best-effort batch delete)
+            const col = _collection();
+            if (col) {
+                col.get().then(snapshot => {
+                    snapshot.forEach(doc => doc.ref.delete());
+                }).catch(() => { });
+            }
             notifyListeners('clear', null);
-        }
+        },
+
+        async refresh() { await _syncFromFirestore(); }
     };
+
+    // Auto-sync on load
+    setTimeout(() => _syncFromFirestore(), 800);
+
+    return store;
 })();
