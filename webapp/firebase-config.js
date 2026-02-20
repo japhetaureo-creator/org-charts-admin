@@ -1,25 +1,32 @@
-// Firebase Configuration Placeholder
-// This file will be populated when Firebase is set up
+// =============================================================================
+// Firebase Configuration & Initialization
+// =============================================================================
+// Loaded AFTER the Firebase CDN scripts in index.html.
+// Exposes: window.firebaseApp, window.firebaseDb
+// =============================================================================
 
-let firebaseConfig = {
-    // apiKey: "YOUR_API_KEY",
-    // authDomain: "YOUR_AUTH_DOMAIN",
-    // projectId: "YOUR_PROJECT_ID",
-    // storageBucket: "YOUR_STORAGE_BUCKET",
-    // messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    // appId: "YOUR_APP_ID"
+const firebaseConfig = {
+    apiKey: "AIzaSyB9RX80o38miQGK-1FlmioJ6CCmS1Zvj9w",
+    authDomain: "org-chart-56259.firebaseapp.com",
+    projectId: "org-chart-56259",
+    storageBucket: "org-chart-56259.firebasestorage.app",
+    messagingSenderId: "258167005553",
+    appId: "1:258167005553:web:1f519a6a291a6aa488d6d0",
+    measurementId: "G-8PN3K7NX7T"
 };
 
-// Uncomment when Firebase is installed
-// import { initializeApp } from 'firebase/app';
-// import { getFirestore } from 'firebase/firestore';
-// import { getAuth } from 'firebase/auth';
-
-// const app = initializeApp(firebaseConfig);
-// const db = getFirestore(app);
-// const auth = getAuth(app);
-
-// Export for use in app.js
-// export { db, auth };
-
-console.log('Firebase configuration ready. Uncomment and configure when Firebase is set up.');
+// Initialize Firebase (compat SDK loaded via CDN)
+try {
+    if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        window.firebaseApp = firebase.app();
+        window.firebaseDb = firebase.firestore();
+        console.log('Firebase initialized. Project:', firebaseConfig.projectId);
+    } else {
+        console.warn('Firebase SDK not loaded. Admin users will fall back to localStorage.');
+    }
+} catch (e) {
+    console.error('Firebase initialization failed:', e);
+}

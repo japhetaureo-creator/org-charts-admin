@@ -166,8 +166,8 @@ const AuthUI = (() => {
 
         if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
 
-        setTimeout(() => {
-            const result = AuthStore.login(email, password);
+        setTimeout(async () => {
+            const result = await AuthStore.login(email, password);
             if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
 
             if (result.ok) {

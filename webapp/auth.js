@@ -129,15 +129,27 @@ const AuthStore = (() => {
 
         /**
          * Attempt to log in. Returns { ok: true, session } or { ok: false, error: string }
+         * Now async — awaits Firestore sync if user is not found locally.
          */
-        login(email, password) {
+        async login(email, password) {
             if (typeof SharedAdminUserStore === 'undefined') {
                 return { ok: false, error: 'User store unavailable. Try refreshing.' };
             }
 
             const trimEmail = (email || '').trim().toLowerCase();
-            const users = SharedAdminUserStore.getAll();
-            const user = users.find(u => (u.email || '').toLowerCase() === trimEmail);
+
+            // First try local cache
+            let users = SharedAdminUserStore.getAll();
+            let user = users.find(u => (u.email || '').toLowerCase() === trimEmail);
+
+            // If not found locally, try refreshing from Firestore
+            if (!user && typeof SharedAdminUserStore.refresh === 'function') {
+                try {
+                    await SharedAdminUserStore.refresh();
+                    users = SharedAdminUserStore.getAll();
+                    user = users.find(u => (u.email || '').toLowerCase() === trimEmail);
+                } catch { /* ignore — will show "no account" below */ }
+            }
 
             if (!user) {
                 return { ok: false, error: 'No account found with that email address.' };
