@@ -2347,9 +2347,26 @@ async function exportOrgChartPDF() {
         savedInlineStyles.set(el, el.getAttribute('style') || '');
 
         const cs = getComputedStyle(el);
-        // Bake the critical visual properties as inline styles
-        // Composite semi-transparent backgrounds to opaque equivalents
-        el.style.setProperty('background-color', compositeRgba(cs.backgroundColor), 'important');
+        const composited = compositeRgba(cs.backgroundColor);
+
+        // Use 'background' shorthand to fully override CSS 'background' shorthand.
+        // BUT: if element has a real background-image (e.g. avatar photo), only
+        // set background-color so we don't wipe out the image.
+        const bgImage = cs.backgroundImage;
+        const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
+        const hasGradient = bgImage && bgImage !== 'none' && bgImage.includes('gradient');
+
+        if (hasRealImage) {
+            // Preserve background-image (avatar), only override color
+            el.style.setProperty('background-color', composited, 'important');
+        } else if (hasGradient) {
+            // Kill CSS gradients (like the white overlay) — replace with flat color
+            el.style.setProperty('background', composited, 'important');
+        } else {
+            // Full override — kill any shorthand
+            el.style.setProperty('background', composited, 'important');
+        }
+
         el.style.setProperty('color', cs.color, 'important');
         el.style.setProperty('border-color', cs.borderColor, 'important');
         el.style.setProperty('border-left-color', cs.borderLeftColor, 'important');
