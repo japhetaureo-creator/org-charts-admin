@@ -2247,11 +2247,12 @@ function shareOrgChart() {
 
         // Native share button
         document.getElementById('oc-share-native').addEventListener('click', async () => {
+            const _shareName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
             if (navigator.share) {
                 try {
                     await navigator.share({
-                        title: 'Acme Corp — OrgChart Pro',
-                        text: 'View the Acme Corp organization chart',
+                        title: `${_shareName} — Organization Chart`,
+                        text: `View the ${_shareName} organization chart`,
                         url: window.location.href
                     });
                 } catch (e) {
@@ -2265,8 +2266,9 @@ function shareOrgChart() {
 
         // Email button
         document.getElementById('oc-share-email').addEventListener('click', () => {
-            const subject = encodeURIComponent('Acme Corp — OrgChart Pro');
-            const body = encodeURIComponent(`Check out the Acme Corp organization chart:\n\n${window.location.href}`);
+            const _emailName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
+            const subject = encodeURIComponent(`${_emailName} — Organization Chart`);
+            const body = encodeURIComponent(`Check out the ${_emailName} organization chart:\n\n${window.location.href}`);
             window.open(`mailto:?subject=${subject}&body=${body}`);
         });
     }
@@ -2309,6 +2311,22 @@ async function exportOrgChartPDF() {
     const savedOverflow = canvas ? canvas.style.overflow : '';
     if (canvas) canvas.style.overflow = 'visible';
 
+    // Get the actual company name
+    const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
+    const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Force explicit backgrounds on glass-panel cards (html2canvas can't render backdrop-filter)
+    const glassPanels = hier.querySelectorAll('.glass-panel, .org-card');
+    const savedBgs = [];
+    glassPanels.forEach(el => {
+        savedBgs.push(el.style.background);
+        const computed = getComputedStyle(el);
+        // If the element relies on backdrop-filter, give it a solid dark bg
+        if (!computed.backgroundColor || computed.backgroundColor === 'rgba(0, 0, 0, 0)' || computed.backgroundColor === 'transparent') {
+            el.style.background = '#1C252E';
+        }
+    });
+
     try {
         // Small delay to let the DOM repaint
         await new Promise(r => setTimeout(r, 80));
@@ -2319,8 +2337,20 @@ async function exportOrgChartPDF() {
             useCORS: true,
             allowTaint: true,
             logging: false,
-            removeContainer: true
+            removeContainer: true,
+            onclone: (clonedDoc) => {
+                // Ensure cloned glass-panel elements have solid backgrounds
+                clonedDoc.querySelectorAll('.glass-panel, .org-card').forEach(el => {
+                    const bg = getComputedStyle(el).backgroundColor;
+                    if (!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {
+                        el.style.background = '#1C252E';
+                    }
+                });
+            }
         });
+
+        // Restore original backgrounds
+        glassPanels.forEach((el, i) => { el.style.background = savedBgs[i]; });
 
         // Restore transform and overflow
         hier.style.transform = savedTransform;
@@ -2365,7 +2395,7 @@ async function exportOrgChartPDF() {
         doc.setFontSize(14);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text('OrgChart Pro — Acme Corp', 8, 12);
+        doc.text(`${companyName} — Organization Chart`, 8, 12);
 
         // Timestamp
         const now = new Date();
@@ -2389,12 +2419,13 @@ async function exportOrgChartPDF() {
         doc.text('Confidential — Internal Use Only', pageW / 2, pageH - 4, { align: 'center' });
 
         // Save
-        const filename = `orgchart-acme-corp-${now.toISOString().slice(0, 10)}.pdf`;
+        const filename = `orgchart-${safeName}-${now.toISOString().slice(0, 10)}.pdf`;
         doc.save(filename);
 
     } catch (err) {
         console.error('PDF export failed:', err);
         // Restore on error
+        glassPanels.forEach((el, i) => { el.style.background = savedBgs[i]; });
         hier.style.transform = savedTransform;
         hier.style.transition = savedTransition;
         if (canvas) canvas.style.overflow = savedOverflow;
