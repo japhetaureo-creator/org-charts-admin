@@ -308,22 +308,22 @@ function initOrgChartEventListeners() {
     }
 
     // ── Filter sidebar toggle ──────────────────────────────────────────────
-    const sidebar = document.getElementById('oc-sidebar-filters');
-    const showFab = document.getElementById('oc-filters-show');
-    const hideBtn = document.getElementById('oc-filters-hide');
+    const filterSidebar = document.getElementById('oc-sidebar-filters');
+    const filterShowFab = document.getElementById('oc-filters-show');
+    const filterHideBtn = document.getElementById('oc-filters-hide');
     const ocCanvas = document.getElementById('org-chart-canvas');
 
-    if (hideBtn && sidebar && showFab) {
-        hideBtn.addEventListener('click', () => {
-            sidebar.classList.add('oc-filters-collapsed');
-            showFab.classList.add('oc-fab-visible');
+    if (filterHideBtn && filterSidebar && filterShowFab) {
+        filterHideBtn.addEventListener('click', () => {
+            filterSidebar.classList.add('oc-filters-collapsed');
+            filterShowFab.classList.add('oc-fab-visible');
             if (ocCanvas) ocCanvas.style.paddingLeft = '40px';
         });
     }
-    if (showFab && sidebar) {
-        showFab.addEventListener('click', () => {
-            sidebar.classList.remove('oc-filters-collapsed');
-            showFab.classList.remove('oc-fab-visible');
+    if (filterShowFab && filterSidebar) {
+        filterShowFab.addEventListener('click', () => {
+            filterSidebar.classList.remove('oc-filters-collapsed');
+            filterShowFab.classList.remove('oc-fab-visible');
             if (ocCanvas) ocCanvas.style.paddingLeft = '';
         });
     }
@@ -357,7 +357,7 @@ function initOrgChartEventListeners() {
     }
 
     // Canvas pan via CSS transforms
-    const ocCanvas = document.getElementById('org-chart-canvas');
+    const canvas = document.getElementById('org-chart-canvas');
     const chartHierarchy = document.getElementById('oc-chart-hierarchy');
     if (canvas && chartHierarchy) {
         // Set canvas to clip (no native scroll needed)
@@ -771,7 +771,7 @@ function resetFilters() {
 // ============================================================================
 
 function toggleEditMode(enabled) {
-    const ocCanvas = document.getElementById('org-chart-canvas');
+    const canvas = document.getElementById('org-chart-canvas');
     if (!canvas) return;
 
     if (enabled) {
@@ -1318,7 +1318,7 @@ function showEditModal(employeeId) {
  * portion of the canvas based on transform-based panning.
  */
 function updateMinimapViewport() {
-    const ocCanvas = document.getElementById('org-chart-canvas');
+    const canvas = document.getElementById('org-chart-canvas');
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     const viewport = document.getElementById('oc-minimap-viewport');
     const minimapEl = document.getElementById('oc-minimap');
@@ -2279,7 +2279,7 @@ function shareOrgChart() {
 async function exportOrgChartPDF() {
     const btn = document.querySelector('[data-action="export-pdf"]');
     const hier = document.getElementById('oc-chart-hierarchy');
-    const ocCanvas = document.getElementById('org-chart-canvas');
+    const canvas = document.getElementById('org-chart-canvas');
 
     if (!hier) return;
 
