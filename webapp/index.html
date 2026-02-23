@@ -437,11 +437,14 @@
             <div class="canvas-dot-pattern flex w-full h-full overflow-hidden relative">
 
                 <!-- Sidebar Filters -->
-                <aside class="glass-panel oc-sidebar-filters">
+                <button id="oc-filters-show" class="oc-filters-toggle-fab" title="Show filters">
+                    <span class="material-symbols-outlined !text-xl">filter_list</span>
+                </button>
+                <aside class="glass-panel oc-sidebar-filters" id="oc-sidebar-filters">
                     <div class="flex items-center justify-between mb-6">
                         <h3 class="text-sm font-bold text-white uppercase tracking-wider">Smart Filters</h3>
-                        <button class="text-slate-400 hover:text-white"><span
-                                class="material-symbols-outlined !text-lg">filter_list</span></button>
+                        <button id="oc-filters-hide" class="text-slate-400 hover:text-white" title="Hide filters"><span
+                                class="material-symbols-outlined !text-lg">close</span></button>
                     </div>
                     <div class="space-y-6 overflow-y-auto pr-1 custom-scrollbar flex-1">
                         <div>

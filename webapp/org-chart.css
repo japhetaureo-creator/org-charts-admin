@@ -680,3 +680,67 @@ html.light #page-org-chart .border-slate-700 {
 html.light .toggle-label {
     background: #d1d5db !important;
 }
+
+/* ============================================================
+   Collapsible Filter Sidebar
+   ============================================================ */
+
+.oc-sidebar-filters {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.25s ease;
+}
+
+.oc-sidebar-filters.oc-filters-collapsed {
+    transform: translateX(calc(-100% - 32px));
+    opacity: 0;
+    pointer-events: none;
+}
+
+.oc-filters-toggle-fab {
+    position: absolute;
+    left: 24px;
+    top: 88px;
+    z-index: 40;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(30, 41, 59, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    opacity: 0;
+    transform: scale(0.8);
+    pointer-events: none;
+}
+
+.oc-filters-toggle-fab.oc-fab-visible {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: auto;
+}
+
+.oc-filters-toggle-fab:hover {
+    background: rgba(30, 41, 59, 0.95);
+    color: #e2e8f0;
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+html.light .oc-filters-toggle-fab {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.08);
+    color: #64748b;
+}
+html.light .oc-filters-toggle-fab:hover {
+    background: #fff;
+    color: #334155;
+}
+
+#org-chart-canvas {
+    transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
