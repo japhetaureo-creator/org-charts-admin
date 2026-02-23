@@ -2315,21 +2315,26 @@ async function exportOrgChartPDF() {
     const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
     const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // Force explicit backgrounds on glass-panel cards (html2canvas can't render backdrop-filter)
-    const glassPanels = hier.querySelectorAll('.glass-panel, .org-card');
-    const savedBgs = [];
+    // Force solid dark backgrounds on ALL glass-panel/org-card elements.
+    // html2canvas cannot render backdrop-filter or semi-transparent rgba() backgrounds,
+    // so we must replace them with opaque equivalents before capture.
+    const glassPanels = hier.querySelectorAll('.glass-panel, .org-card, [class*="bg-white/"], [class*="bg-slate"]');
+    const savedStyles = [];
     glassPanels.forEach(el => {
-        savedBgs.push(el.style.background);
-        const computed = getComputedStyle(el);
-        // If the element relies on backdrop-filter, give it a solid dark bg
-        if (!computed.backgroundColor || computed.backgroundColor === 'rgba(0, 0, 0, 0)' || computed.backgroundColor === 'transparent') {
-            el.style.background = '#1C252E';
-        }
+        savedStyles.push({
+            background: el.style.background,
+            backdropFilter: el.style.backdropFilter,
+            webkitBackdropFilter: el.style.webkitBackdropFilter
+        });
+        // Force a solid dark card background and disable backdrop-filter
+        el.style.background = '#1e293b';
+        el.style.backdropFilter = 'none';
+        el.style.webkitBackdropFilter = 'none';
     });
 
     try {
-        // Small delay to let the DOM repaint
-        await new Promise(r => setTimeout(r, 80));
+        // Small delay to let the DOM repaint with solid backgrounds
+        await new Promise(r => setTimeout(r, 150));
 
         const captureCanvas = await html2canvas(hier, {
             scale: 2,
@@ -2339,18 +2344,21 @@ async function exportOrgChartPDF() {
             logging: false,
             removeContainer: true,
             onclone: (clonedDoc) => {
-                // Ensure cloned glass-panel elements have solid backgrounds
-                clonedDoc.querySelectorAll('.glass-panel, .org-card').forEach(el => {
-                    const bg = getComputedStyle(el).backgroundColor;
-                    if (!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') {
-                        el.style.background = '#1C252E';
-                    }
+                // Belt-and-suspenders: also fix in the clone
+                clonedDoc.querySelectorAll('.glass-panel, .org-card, [class*="bg-white/"], [class*="bg-slate"]').forEach(el => {
+                    el.style.background = '#1e293b';
+                    el.style.backdropFilter = 'none';
+                    el.style.webkitBackdropFilter = 'none';
                 });
             }
         });
 
-        // Restore original backgrounds
-        glassPanels.forEach((el, i) => { el.style.background = savedBgs[i]; });
+        // Restore original styles immediately
+        glassPanels.forEach((el, i) => {
+            el.style.background = savedStyles[i].background;
+            el.style.backdropFilter = savedStyles[i].backdropFilter;
+            el.style.webkitBackdropFilter = savedStyles[i].webkitBackdropFilter;
+        });
 
         // Restore transform and overflow
         hier.style.transform = savedTransform;
@@ -2425,7 +2433,11 @@ async function exportOrgChartPDF() {
     } catch (err) {
         console.error('PDF export failed:', err);
         // Restore on error
-        glassPanels.forEach((el, i) => { el.style.background = savedBgs[i]; });
+        glassPanels.forEach((el, i) => {
+            el.style.background = savedStyles[i].background;
+            el.style.backdropFilter = savedStyles[i].backdropFilter;
+            el.style.webkitBackdropFilter = savedStyles[i].webkitBackdropFilter;
+        });
         hier.style.transform = savedTransform;
         hier.style.transition = savedTransition;
         if (canvas) canvas.style.overflow = savedOverflow;
