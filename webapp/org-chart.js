@@ -1456,6 +1456,21 @@ function ocDragMouseDown(e, card) {
     document.addEventListener('mouseup', ocDragMouseUp);
 }
 
+// ── Safety nets: cancel interrupted drags ──────────────────────────────────
+// Registered once (idempotent) — if the browser loses focus, the tab hides,
+// or the mouse escapes the viewport during a drag, clean up immediately.
+(function _ocRegisterDragSafetyNets() {
+    window.addEventListener('blur', () => {
+        if (_ocDrag.active) ocDragCleanup();
+    });
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden && _ocDrag.active) ocDragCleanup();
+    });
+    document.documentElement.addEventListener('mouseleave', () => {
+        if (_ocDrag.active) ocDragCleanup();
+    });
+})();
+
 function ocDragMouseMove(e) {
     if (!_ocDrag.active) return;
 
@@ -1524,23 +1539,32 @@ function ocDragMouseUp(e) {
     document.removeEventListener('mousemove', ocDragMouseMove);
     document.removeEventListener('mouseup', ocDragMouseUp);
 
-    if (_ocDrag.currentTarget && _ocDrag.sourceCard) {
-        performCardAssign(_ocDrag.sourceCard, _ocDrag.currentTarget);
+    try {
+        if (_ocDrag.currentTarget && _ocDrag.sourceCard) {
+            performCardAssign(_ocDrag.sourceCard, _ocDrag.currentTarget);
+        }
+    } catch (err) {
+        console.error('[OrgChart] performCardAssign failed:', err);
+    } finally {
+        // Cleanup MUST run no matter what
+        ocDragCleanup();
     }
-
-    ocDragCleanup();
 }
 
 function ocDragCleanup() {
-    // Remove clone
-    const clone = document.querySelector('.oc-drag-clone');
-    if (clone) clone.remove();
+    // Remove clone — query DOM directly, don't rely only on references
+    document.querySelectorAll('.oc-drag-clone').forEach(el => el.remove());
 
-    // Remove SVG
+    // Remove SVG overlay — try reference first, then fall back to DOM query
     if (_ocDrag.svgOverlay) {
         _ocDrag.svgOverlay.remove();
         _ocDrag.svgOverlay = null;
     }
+    // Fallback: remove any orphaned drag SVG overlays on document.body
+    document.querySelectorAll('#oc-drag-line, #oc-drag-shadow, #oc-drag-dot').forEach(el => {
+        const svg = el.closest('svg');
+        if (svg && svg.parentElement === document.body) svg.remove();
+    });
 
     // Remove ghost
     removeGhostDropZone();

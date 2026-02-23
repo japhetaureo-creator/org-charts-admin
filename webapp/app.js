@@ -166,6 +166,15 @@ function navigateToPage(page) {
     // Clear previous page-specific body classes
     document.body.classList.remove('oc-org-chart-mode');
 
+    // ── Org chart cleanup: remove lingering drag clones + turn off edit mode ──
+    if (typeof ocDragCleanup === 'function') ocDragCleanup();
+    if (page !== 'org-chart' && typeof OrgChartState !== 'undefined' && OrgChartState.editMode) {
+        OrgChartState.editMode = false;
+        const editToggle = document.getElementById('org-edit-toggle');
+        if (editToggle) editToggle.checked = false;
+        if (typeof toggleEditMode === 'function') toggleEditMode(false);
+    }
+
     if (fullPages.includes(page)) {
         // Switch main into "nav mode": shrinks to 0 via CSS but header stays fixed/visible
         if (mainEl) {
