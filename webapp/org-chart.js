@@ -2346,33 +2346,49 @@ async function exportOrgChartPDF() {
     allElements.forEach(el => {
         savedInlineStyles.set(el, el.getAttribute('style') || '');
     });
-    // Also save hierarchy container style
     savedInlineStyles.set(hier, hier.getAttribute('style') || '');
 
-    // SECOND PASS: Force dark bg on ALL org-cards and glass-panels directly.
-    // This is the guaranteed fix — no reliance on computed style parsing.
-    hier.querySelectorAll('.org-card, .glass-panel').forEach(el => {
-        el.style.setProperty('background', '#1e293b', 'important');
-        el.style.setProperty('backdrop-filter', 'none', 'important');
-        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-    });
+    // Debug: log card count
+    const orgCards = hier.querySelectorAll('.org-card');
+    console.log(`[PDF Export] Found ${orgCards.length} org-cards, ${allElements.length} total elements`);
 
-    // THIRD PASS: Bake computed styles on all elements for text/border colors
+    // APPROACH: For EVERY element inside the hierarchy:
+    // - org-card / glass-panel → force solid dark background
+    // - Children OF org-card → force transparent background (parent's dark shows through)
+    // - Everything else (wrapper divs, connectors) → force dark background
+    // - Elements with background-image url() → only set background-color
     allElements.forEach(el => {
         const cs = getComputedStyle(el);
+        const bgImage = cs.backgroundImage;
+        const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
+        const isCard = el.classList.contains('org-card') || el.classList.contains('glass-panel');
+        const isInsideCard = !isCard && el.closest('.org-card');
 
-        // For non-card elements, composite their background too
-        if (!el.classList.contains('org-card') && !el.classList.contains('glass-panel')) {
-            const composited = compositeRgba(cs.backgroundColor);
-            const bgImage = cs.backgroundImage;
-            const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
-            if (hasRealImage) {
-                el.style.setProperty('background-color', composited, 'important');
+        if (isCard) {
+            // Card element: force solid dark background
+            el.style.setProperty('background', '#1e293b', 'important');
+        } else if (isInsideCard && hasRealImage) {
+            // Avatar or element with an image inside a card: preserve image, set transparent bg
+            el.style.setProperty('background-color', 'transparent', 'important');
+        } else if (isInsideCard) {
+            // Child of a card: make transparent so parent dark bg shows through
+            // BUT if it has a visible bg (like the badge/pill), keep a dark-composited version
+            const bgColor = cs.backgroundColor;
+            const isTransparent = !bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)';
+            if (isTransparent) {
+                el.style.setProperty('background', 'transparent', 'important');
             } else {
-                el.style.setProperty('background', composited, 'important');
+                // Pill/badge with bg-white/5 — composite against card bg (#1e293b)
+                el.style.setProperty('background', compositeRgba(bgColor), 'important');
             }
+        } else if (hasRealImage) {
+            el.style.setProperty('background-color', compositeRgba(cs.backgroundColor), 'important');
+        } else {
+            // Wrapper divs, connectors, etc — force dark
+            el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
         }
 
+        // Always bake text and border colors
         el.style.setProperty('color', cs.color, 'important');
         el.style.setProperty('border-color', cs.borderColor, 'important');
         el.style.setProperty('border-left-color', cs.borderLeftColor, 'important');
@@ -2385,7 +2401,7 @@ async function exportOrgChartPDF() {
         el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
     });
 
-    // Also bake styles on the hierarchy container itself
+    // Force hierarchy container dark bg
     hier.style.setProperty('background', '#0f1115', 'important');
 
     try {
