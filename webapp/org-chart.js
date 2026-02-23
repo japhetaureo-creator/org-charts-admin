@@ -2316,6 +2316,29 @@ async function exportOrgChartPDF() {
     // utility classes produce ZERO CSS rules in the clone. The only reliable
     // fix: read getComputedStyle() from the LIVE DOM and write key visual
     // properties as inline styles, so they survive the clone.
+
+    // Helper: composite a semi-transparent rgba() against a dark background
+    // to produce an opaque rgb() color. html2canvas internally renders against
+    // white, so we must pre-composite to prevent washed-out colors.
+    const DARK_BG = [15, 17, 21]; // #0f1115
+    function compositeRgba(rgbaStr) {
+        if (!rgbaStr) return rgbaStr;
+        // Match rgba(r, g, b, a) — if it's rgb() or opaque, return as-is
+        const m = rgbaStr.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+))?\s*\)/);
+        if (!m) return rgbaStr;
+        const r = parseFloat(m[1]);
+        const g = parseFloat(m[2]);
+        const b = parseFloat(m[3]);
+        const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
+        if (a >= 0.99) return rgbaStr; // already opaque
+        if (a < 0.01) return `rgb(${DARK_BG[0]}, ${DARK_BG[1]}, ${DARK_BG[2]})`; // fully transparent → dark bg
+        // Alpha-composite: result = fg * a + bg * (1 - a)
+        const rr = Math.round(r * a + DARK_BG[0] * (1 - a));
+        const rg = Math.round(g * a + DARK_BG[1] * (1 - a));
+        const rb = Math.round(b * a + DARK_BG[2] * (1 - a));
+        return `rgb(${rr}, ${rg}, ${rb})`;
+    }
+
     const allElements = hier.querySelectorAll('*');
     const savedInlineStyles = new Map();
 
@@ -2325,7 +2348,8 @@ async function exportOrgChartPDF() {
 
         const cs = getComputedStyle(el);
         // Bake the critical visual properties as inline styles
-        el.style.setProperty('background-color', cs.backgroundColor, 'important');
+        // Composite semi-transparent backgrounds to opaque equivalents
+        el.style.setProperty('background-color', compositeRgba(cs.backgroundColor), 'important');
         el.style.setProperty('color', cs.color, 'important');
         el.style.setProperty('border-color', cs.borderColor, 'important');
         el.style.setProperty('border-left-color', cs.borderLeftColor, 'important');
