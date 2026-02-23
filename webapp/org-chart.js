@@ -2310,34 +2310,42 @@ async function exportOrgChartPDF() {
     const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
     const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // ── Inject temporary stylesheet for html2canvas ──────────────────────────
-    // html2canvas CANNOT render: backdrop-filter, semi-transparent rgba backgrounds.
-    // We inject a <style> with !important to force solid opaque backgrounds.
-    const pdfExportStyle = document.createElement('style');
-    pdfExportStyle.id = 'oc-pdf-export-overrides';
-    pdfExportStyle.textContent = `
-        #oc-chart-hierarchy .glass-panel,
-        #oc-chart-hierarchy .org-card {
-            background: #1e293b !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-        }
-        #oc-chart-hierarchy [class*="bg-white"] {
-            background-color: rgba(30, 41, 59, 0.6) !important;
-        }
-        #oc-chart-hierarchy [class*="bg-gradient"] {
-            background: transparent !important;
-        }
-        #oc-chart-hierarchy .org-card .ring-white\/10,
-        #oc-chart-hierarchy .org-card .ring-white\/5 {
-            --tw-ring-color: rgba(148, 163, 184, 0.15) !important;
-        }
-    `;
-    document.head.appendChild(pdfExportStyle);
+    // ── Nuclear approach: bake ALL computed styles as inline styles ─────────
+    // Tailwind CDN generates styles via JS. When html2canvas clones the DOM
+    // into an iframe, the Tailwind script does NOT re-execute — so all Tailwind
+    // utility classes produce ZERO CSS rules in the clone. The only reliable
+    // fix: read getComputedStyle() from the LIVE DOM and write key visual
+    // properties as inline styles, so they survive the clone.
+    const allElements = hier.querySelectorAll('*');
+    const savedInlineStyles = new Map();
+
+    allElements.forEach(el => {
+        // Save the original inline style attribute so we can restore it
+        savedInlineStyles.set(el, el.getAttribute('style') || '');
+
+        const cs = getComputedStyle(el);
+        // Bake the critical visual properties as inline styles
+        el.style.setProperty('background-color', cs.backgroundColor, 'important');
+        el.style.setProperty('color', cs.color, 'important');
+        el.style.setProperty('border-color', cs.borderColor, 'important');
+        el.style.setProperty('border-left-color', cs.borderLeftColor, 'important');
+        el.style.setProperty('border-right-color', cs.borderRightColor, 'important');
+        el.style.setProperty('border-top-color', cs.borderTopColor, 'important');
+        el.style.setProperty('border-bottom-color', cs.borderBottomColor, 'important');
+        el.style.setProperty('box-shadow', cs.boxShadow, 'important');
+        el.style.setProperty('opacity', cs.opacity);
+        // Kill backdrop-filter (html2canvas can't render it)
+        el.style.setProperty('backdrop-filter', 'none', 'important');
+        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+    });
+
+    // Also bake styles on the hierarchy container itself
+    const hierCS = getComputedStyle(hier);
+    hier.style.setProperty('background-color', hierCS.backgroundColor, 'important');
 
     try {
-        // Let the DOM repaint with the override stylesheet active
-        await new Promise(r => setTimeout(r, 200));
+        // Let the DOM repaint with inline styles applied
+        await new Promise(r => setTimeout(r, 100));
 
         const captureCanvas = await html2canvas(hier, {
             scale: 2,
@@ -2345,18 +2353,18 @@ async function exportOrgChartPDF() {
             useCORS: true,
             allowTaint: true,
             logging: false,
-            removeContainer: true,
-            onclone: (clonedDoc) => {
-                // The cloned doc does NOT inherit our <style> tag,
-                // so we inject it there too.
-                const cloneStyle = clonedDoc.createElement('style');
-                cloneStyle.textContent = pdfExportStyle.textContent;
-                clonedDoc.head.appendChild(cloneStyle);
-            }
+            removeContainer: true
         });
 
-        // Remove the temporary override stylesheet immediately
-        pdfExportStyle.remove();
+        // Restore ALL original inline styles
+        allElements.forEach(el => {
+            const original = savedInlineStyles.get(el);
+            if (original) {
+                el.setAttribute('style', original);
+            } else {
+                el.removeAttribute('style');
+            }
+        });
 
         // Restore transform and overflow
         hier.style.transform = savedTransform;
@@ -2452,14 +2460,21 @@ async function exportOrgChartPDF() {
 
     } catch (err) {
         console.error('PDF export failed:', err);
-        // Restore on error
-        pdfExportStyle.remove();
+        // Restore all original inline styles on error
+        allElements.forEach(el => {
+            const original = savedInlineStyles.get(el);
+            if (original) {
+                el.setAttribute('style', original);
+            } else {
+                el.removeAttribute('style');
+            }
+        });
         hier.style.transform = savedTransform;
         hier.style.transition = savedTransition;
         if (canvas) canvas.style.overflow = savedOverflow;
         alert('PDF export failed. Please try again.');
     } finally {
-        // Ensure stylesheet is removed
+        // Ensure no stale override stylesheet remains
         document.getElementById('oc-pdf-export-overrides')?.remove();
         // Restore button
         if (btn) {
