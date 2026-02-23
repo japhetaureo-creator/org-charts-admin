@@ -2002,11 +2002,6 @@ function showToast(message, type = 'success') {
 // EXPORT & SHARE
 // ============================================================================
 
-function exportOrgChartPDF() {
-    console.log('Exporting org chart to PDF...');
-    // TODO: Implement PDF export using a library like jsPDF or html2canvas
-    alert('PDF export feature coming soon!');
-}
 
 function shareOrgChart() {
     console.log('Sharing org chart...');
@@ -2315,26 +2310,34 @@ async function exportOrgChartPDF() {
     const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
     const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-    // Force solid dark backgrounds on ALL glass-panel/org-card elements.
-    // html2canvas cannot render backdrop-filter or semi-transparent rgba() backgrounds,
-    // so we must replace them with opaque equivalents before capture.
-    const glassPanels = hier.querySelectorAll('.glass-panel, .org-card, [class*="bg-white/"], [class*="bg-slate"]');
-    const savedStyles = [];
-    glassPanels.forEach(el => {
-        savedStyles.push({
-            background: el.style.background,
-            backdropFilter: el.style.backdropFilter,
-            webkitBackdropFilter: el.style.webkitBackdropFilter
-        });
-        // Force a solid dark card background and disable backdrop-filter
-        el.style.background = '#1e293b';
-        el.style.backdropFilter = 'none';
-        el.style.webkitBackdropFilter = 'none';
-    });
+    // ── Inject temporary stylesheet for html2canvas ──────────────────────────
+    // html2canvas CANNOT render: backdrop-filter, semi-transparent rgba backgrounds.
+    // We inject a <style> with !important to force solid opaque backgrounds.
+    const pdfExportStyle = document.createElement('style');
+    pdfExportStyle.id = 'oc-pdf-export-overrides';
+    pdfExportStyle.textContent = `
+        #oc-chart-hierarchy .glass-panel,
+        #oc-chart-hierarchy .org-card {
+            background: #1e293b !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        #oc-chart-hierarchy [class*="bg-white"] {
+            background-color: rgba(30, 41, 59, 0.6) !important;
+        }
+        #oc-chart-hierarchy [class*="bg-gradient"] {
+            background: transparent !important;
+        }
+        #oc-chart-hierarchy .org-card .ring-white\/10,
+        #oc-chart-hierarchy .org-card .ring-white\/5 {
+            --tw-ring-color: rgba(148, 163, 184, 0.15) !important;
+        }
+    `;
+    document.head.appendChild(pdfExportStyle);
 
     try {
-        // Small delay to let the DOM repaint with solid backgrounds
-        await new Promise(r => setTimeout(r, 150));
+        // Let the DOM repaint with the override stylesheet active
+        await new Promise(r => setTimeout(r, 200));
 
         const captureCanvas = await html2canvas(hier, {
             scale: 2,
@@ -2344,21 +2347,16 @@ async function exportOrgChartPDF() {
             logging: false,
             removeContainer: true,
             onclone: (clonedDoc) => {
-                // Belt-and-suspenders: also fix in the clone
-                clonedDoc.querySelectorAll('.glass-panel, .org-card, [class*="bg-white/"], [class*="bg-slate"]').forEach(el => {
-                    el.style.background = '#1e293b';
-                    el.style.backdropFilter = 'none';
-                    el.style.webkitBackdropFilter = 'none';
-                });
+                // The cloned doc does NOT inherit our <style> tag,
+                // so we inject it there too.
+                const cloneStyle = clonedDoc.createElement('style');
+                cloneStyle.textContent = pdfExportStyle.textContent;
+                clonedDoc.head.appendChild(cloneStyle);
             }
         });
 
-        // Restore original styles immediately
-        glassPanels.forEach((el, i) => {
-            el.style.background = savedStyles[i].background;
-            el.style.backdropFilter = savedStyles[i].backdropFilter;
-            el.style.webkitBackdropFilter = savedStyles[i].webkitBackdropFilter;
-        });
+        // Remove the temporary override stylesheet immediately
+        pdfExportStyle.remove();
 
         // Restore transform and overflow
         hier.style.transform = savedTransform;
@@ -2368,34 +2366,56 @@ async function exportOrgChartPDF() {
         const { jsPDF } = window.jspdf;
         const imgData = captureCanvas.toDataURL('image/png');
 
-        // Determine orientation based on chart dimensions
+        // Determine orientation and page size based on chart dimensions
         const chartW = captureCanvas.width / 2; // account for scale:2
         const chartH = captureCanvas.height / 2;
         const isLandscape = chartW > chartH;
 
+        // Use a custom page size that matches the chart aspect ratio
+        // so the chart fills the entire page (with small margins)
+        const margin = 10; // mm
+        const headerH = 18; // mm
+        const footerH = 10; // mm
+        const maxW = 420; // A3-ish width limit
+        const maxH = 297; // A3-ish height limit
+
+        const contentRatio = chartW / chartH;
+        let pdfW, pdfH;
+        if (isLandscape) {
+            pdfW = Math.min(maxW, 297); // landscape A4 width
+            const contentH_avail = (pdfW - margin * 2) / contentRatio;
+            pdfH = contentH_avail + headerH + footerH + margin;
+            if (pdfH > maxH) {
+                pdfH = maxH;
+            }
+        } else {
+            pdfH = Math.min(maxH, 420);
+            const contentW_avail = (pdfH - headerH - footerH - margin) * contentRatio;
+            pdfW = contentW_avail + margin * 2;
+            if (pdfW > maxW) pdfW = maxW;
+        }
+
         const doc = new jsPDF({
             orientation: isLandscape ? 'landscape' : 'portrait',
             unit: 'mm',
-            format: 'a4'
+            format: [pdfW, pdfH]
         });
 
         const pageW = doc.internal.pageSize.getWidth();
         const pageH = doc.internal.pageSize.getHeight();
 
-        // Header area
-        const headerH = 18;
-        const footerH = 10;
-        const contentH = pageH - headerH - footerH - 8;
-        const contentW = pageW - 16;
+        // Available content area
+        const contentW = pageW - margin * 2;
+        const contentH = pageH - headerH - footerH - margin;
 
-        // Scale image to fit content area
+        // Scale image to fill content area
         const ratio = Math.min(contentW / chartW, contentH / chartH);
         const imgW = chartW * ratio;
         const imgH = chartH * ratio;
         const imgX = (pageW - imgW) / 2;
-        const imgY = headerH + 4;
+        const imgY = headerH + 2;
 
-        // Header background
+        // Dark background
         doc.setFillColor(15, 17, 21);
         doc.rect(0, 0, pageW, pageH, 'F');
 
@@ -2403,7 +2423,7 @@ async function exportOrgChartPDF() {
         doc.setFontSize(14);
         doc.setTextColor(255, 255, 255);
         doc.setFont('helvetica', 'bold');
-        doc.text(`${companyName} — Organization Chart`, 8, 12);
+        doc.text(`${companyName} — Organization Chart`, margin, 12);
 
         // Timestamp
         const now = new Date();
@@ -2411,12 +2431,12 @@ async function exportOrgChartPDF() {
         doc.setFontSize(8);
         doc.setTextColor(148, 163, 184);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Generated ${timestamp}`, pageW - 8, 12, { align: 'right' });
+        doc.text(`Generated ${timestamp}`, pageW - margin, 12, { align: 'right' });
 
         // Separator line
         doc.setDrawColor(99, 102, 241);
         doc.setLineWidth(0.5);
-        doc.line(8, headerH, pageW - 8, headerH);
+        doc.line(margin, headerH, pageW - margin, headerH);
 
         // Chart image
         doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
@@ -2433,16 +2453,14 @@ async function exportOrgChartPDF() {
     } catch (err) {
         console.error('PDF export failed:', err);
         // Restore on error
-        glassPanels.forEach((el, i) => {
-            el.style.background = savedStyles[i].background;
-            el.style.backdropFilter = savedStyles[i].backdropFilter;
-            el.style.webkitBackdropFilter = savedStyles[i].webkitBackdropFilter;
-        });
+        pdfExportStyle.remove();
         hier.style.transform = savedTransform;
         hier.style.transition = savedTransition;
         if (canvas) canvas.style.overflow = savedOverflow;
         alert('PDF export failed. Please try again.');
     } finally {
+        // Ensure stylesheet is removed
+        document.getElementById('oc-pdf-export-overrides')?.remove();
         // Restore button
         if (btn) {
             btn.disabled = false;
