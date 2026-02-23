@@ -2352,37 +2352,40 @@ async function exportOrgChartPDF() {
     const orgCards = hier.querySelectorAll('.org-card');
     console.log(`[PDF Export] Found ${orgCards.length} org-cards, ${allElements.length} total elements`);
 
-    // APPROACH: For EVERY element inside the hierarchy:
-    // - org-card / glass-panel → force solid dark background
-    // - Children OF org-card → force transparent background (parent's dark shows through)
-    // - Everything else (wrapper divs, connectors) → force dark background
-    // - Elements with background-image url() → only set background-color
+    // CRITICAL FIX: ui-avatars.com sends duplicate Access-Control-Allow-Origin headers
+    // which causes CORS failures. html2canvas then renders white rectangles for cards
+    // with failed images. Solution: strip ALL external background-image URLs and replace
+    // with colored placeholders before capture.
     allElements.forEach(el => {
         const cs = getComputedStyle(el);
         const bgImage = cs.backgroundImage;
-        const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
+        const hasExternalImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
         const isCard = el.classList.contains('org-card') || el.classList.contains('glass-panel');
         const isInsideCard = !isCard && el.closest('.org-card');
 
         if (isCard) {
-            // Card element: force solid dark background
+            // Card element: force solid dark background, kill any backdrop-filter
             el.style.setProperty('background', '#1e293b', 'important');
-        } else if (isInsideCard && hasRealImage) {
-            // Avatar or element with an image inside a card: preserve image, set transparent bg
-            el.style.setProperty('background-color', 'transparent', 'important');
+            el.style.setProperty('backdrop-filter', 'none', 'important');
+            el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+        } else if (isInsideCard && hasExternalImage) {
+            // Avatar element with background-image: url(...) - STRIP the image entirely
+            // to prevent CORS failures. Replace with a solid indigo placeholder.
+            el.style.setProperty('background', '#4f46e5', 'important');
+            el.style.setProperty('background-image', 'none', 'important');
         } else if (isInsideCard) {
-            // Child of a card: make transparent so parent dark bg shows through
-            // BUT if it has a visible bg (like the badge/pill), keep a dark-composited version
+            // Child of a card: either transparent (shows parent dark bg) or composited
             const bgColor = cs.backgroundColor;
             const isTransparent = !bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)';
             if (isTransparent) {
                 el.style.setProperty('background', 'transparent', 'important');
             } else {
-                // Pill/badge with bg-white/5 — composite against card bg (#1e293b)
                 el.style.setProperty('background', compositeRgba(bgColor), 'important');
             }
-        } else if (hasRealImage) {
-            el.style.setProperty('background-color', compositeRgba(cs.backgroundColor), 'important');
+        } else if (hasExternalImage) {
+            // Non-card element with external image — strip image, use dark bg
+            el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
+            el.style.setProperty('background-image', 'none', 'important');
         } else {
             // Wrapper divs, connectors, etc — force dark
             el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
@@ -2404,6 +2407,8 @@ async function exportOrgChartPDF() {
     // Force hierarchy container dark bg
     hier.style.setProperty('background', '#0f1115', 'important');
 
+    console.log('[PDF Export] Style baking complete, starting html2canvas...');
+
     try {
         // Let the DOM repaint with inline styles applied
         await new Promise(r => setTimeout(r, 100));
@@ -2411,8 +2416,7 @@ async function exportOrgChartPDF() {
         const captureCanvas = await html2canvas(hier, {
             scale: 2,
             backgroundColor: '#0f1115',
-            useCORS: true,
-            allowTaint: true,
+            allowTaint: false,
             logging: false,
             removeContainer: true
         });
