@@ -2342,29 +2342,35 @@ async function exportOrgChartPDF() {
     const allElements = hier.querySelectorAll('*');
     const savedInlineStyles = new Map();
 
+    // FIRST PASS: Save all original inline styles
     allElements.forEach(el => {
-        // Save the original inline style attribute so we can restore it
         savedInlineStyles.set(el, el.getAttribute('style') || '');
+    });
+    // Also save hierarchy container style
+    savedInlineStyles.set(hier, hier.getAttribute('style') || '');
 
+    // SECOND PASS: Force dark bg on ALL org-cards and glass-panels directly.
+    // This is the guaranteed fix — no reliance on computed style parsing.
+    hier.querySelectorAll('.org-card, .glass-panel').forEach(el => {
+        el.style.setProperty('background', '#1e293b', 'important');
+        el.style.setProperty('backdrop-filter', 'none', 'important');
+        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+    });
+
+    // THIRD PASS: Bake computed styles on all elements for text/border colors
+    allElements.forEach(el => {
         const cs = getComputedStyle(el);
-        const composited = compositeRgba(cs.backgroundColor);
 
-        // Use 'background' shorthand to fully override CSS 'background' shorthand.
-        // BUT: if element has a real background-image (e.g. avatar photo), only
-        // set background-color so we don't wipe out the image.
-        const bgImage = cs.backgroundImage;
-        const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
-        const hasGradient = bgImage && bgImage !== 'none' && bgImage.includes('gradient');
-
-        if (hasRealImage) {
-            // Preserve background-image (avatar), only override color
-            el.style.setProperty('background-color', composited, 'important');
-        } else if (hasGradient) {
-            // Kill CSS gradients (like the white overlay) — replace with flat color
-            el.style.setProperty('background', composited, 'important');
-        } else {
-            // Full override — kill any shorthand
-            el.style.setProperty('background', composited, 'important');
+        // For non-card elements, composite their background too
+        if (!el.classList.contains('org-card') && !el.classList.contains('glass-panel')) {
+            const composited = compositeRgba(cs.backgroundColor);
+            const bgImage = cs.backgroundImage;
+            const hasRealImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
+            if (hasRealImage) {
+                el.style.setProperty('background-color', composited, 'important');
+            } else {
+                el.style.setProperty('background', composited, 'important');
+            }
         }
 
         el.style.setProperty('color', cs.color, 'important');
@@ -2375,14 +2381,12 @@ async function exportOrgChartPDF() {
         el.style.setProperty('border-bottom-color', cs.borderBottomColor, 'important');
         el.style.setProperty('box-shadow', cs.boxShadow, 'important');
         el.style.setProperty('opacity', cs.opacity);
-        // Kill backdrop-filter (html2canvas can't render it)
         el.style.setProperty('backdrop-filter', 'none', 'important');
         el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
     });
 
     // Also bake styles on the hierarchy container itself
-    const hierCS = getComputedStyle(hier);
-    hier.style.setProperty('background-color', hierCS.backgroundColor, 'important');
+    hier.style.setProperty('background', '#0f1115', 'important');
 
     try {
         // Let the DOM repaint with inline styles applied
