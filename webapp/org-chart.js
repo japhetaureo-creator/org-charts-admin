@@ -2369,6 +2369,14 @@ function exportOrgChartPDF() {
     hier.style.transform = savedTransform;
     hier.style.transition = savedTransition;
 
+    // CRITICAL: Reset the root clone element's own position so it starts at 0,0
+    // The computed top/left from the live DOM might be far offscreen
+    clone.style.position = 'relative';
+    clone.style.top = '0';
+    clone.style.left = '0';
+    clone.style.transform = 'none';
+    clone.style.margin = '0';
+
     // Serialize clone HTML
     var cloneHTML = clone.outerHTML;
 
@@ -2407,13 +2415,22 @@ function exportOrgChartPDF() {
         '  var wrap = document.getElementById("pdf-wrap");\n' +
         '  var hier = wrap ? wrap.querySelector("#oc-chart-hierarchy") : null;\n' +
         '  if (!wrap || !hier) return;\n' +
+        '  // Available page area (subtract padding and header height)\n' +
         '  var pageW = document.documentElement.clientWidth - 24;\n' +
+        '  var headerEl = document.querySelector(".pdf-header");\n' +
+        '  var headerH = headerEl ? headerEl.offsetHeight + 20 : 50;\n' +
+        '  var footerH = 30;\n' +
+        '  var pageH = document.documentElement.clientHeight - headerH - footerH - 24;\n' +
         '  var chartW = hier.scrollWidth;\n' +
-        '  if (chartW > pageW) {\n' +
-        '    var scale = pageW / chartW;\n' +
-        '    wrap.style.transform = "scale(" + scale + ")";\n' +
-        '    wrap.style.height = (hier.scrollHeight * scale) + "px";\n' +
-        '  }\n' +
+        '  var chartH = hier.scrollHeight;\n' +
+        '  // Scale by the limiting dimension so chart fits on ONE page\n' +
+        '  var scaleW = chartW > 0 ? pageW / chartW : 1;\n' +
+        '  var scaleH = chartH > 0 ? pageH / chartH : 1;\n' +
+        '  var scale = Math.min(scaleW, scaleH, 1); // never upscale\n' +
+        '  wrap.style.transform = "scale(" + scale + ")";\n' +
+        '  wrap.style.transformOrigin = "top left";\n' +
+        '  wrap.style.width = (chartW * scale) + "px";\n' +
+        '  wrap.style.height = (chartH * scale) + "px";\n' +
         '}\n' +
         'window.onload = function() {\n' +
         '  scaleToFit();\n' +
