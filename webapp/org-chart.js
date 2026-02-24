@@ -304,19 +304,24 @@ function _ocCenterChart() {
         const rootCard = hier.querySelector('.org-card');
         if (!rootCard) return;
 
-        // The canvas itself is the scroll container (overflow-auto)
+        // Reset scroll to the origin so we can measure from a clean baseline
+        canvas.scrollLeft = 0;
+        canvas.scrollTop = 0;
+
+        // Force layout recalc so getBoundingClientRect returns fresh values
+        void canvas.offsetHeight;
+
         const rootRect = rootCard.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
 
-        // Horizontal scroll: centre the root card in the visible width
-        const rootCentreXInCanvas = rootCard.offsetLeft + (rootRect.width / OrgChartState.zoom) / 2;
-        const visibleWidth = canvas.clientWidth;
-        canvas.scrollLeft = (rootCentreXInCanvas * OrgChartState.zoom) - (visibleWidth / 2);
+        // Root card centre relative to the canvas left edge (at scrollLeft=0)
+        const rootCenterX = (rootRect.left + rootRect.width / 2) - canvasRect.left;
+        const canvasCenterX = canvasRect.width / 2;
 
-        // Vertical scroll: bring root card near the top with small padding
-        // The hierarchy's offsetTop already accounts for the pill bar + breadcrumb
-        canvas.scrollTop = 0; // start from top
-    }, 150);
+        // Scroll so the root card centre sits at the canvas centre
+        canvas.scrollLeft = rootCenterX - canvasCenterX;
+        canvas.scrollTop = 0; // keep vertical at top so CEO is right below breadcrumb
+    }, 200);
 }
 
 
