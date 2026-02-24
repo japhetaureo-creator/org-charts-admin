@@ -362,6 +362,13 @@ function initOrgChartEventListeners() {
         });
     }
 
+    // Collapse smart filters by default on load
+    if (filterSidebar && filterShowFab) {
+        filterSidebar.classList.add('oc-filters-collapsed');
+        filterShowFab.classList.add('oc-fab-visible');
+        if (ocCanvas) ocCanvas.style.paddingLeft = '40px';
+    }
+
     // Share button
     const shareBtn = document.querySelector('[data-action="share"]');
     if (shareBtn) {
