@@ -714,7 +714,192 @@ function populateFilters() {
             });
         });
     }
+
+    // Sync department view pill bar
+    populateDeptView();
 }
+
+// Called from populateFilters and on employee data change
+// to also sync the dept-view pill bar
+// (inserted at end of populateFilters below)
+
+// =============================================================================
+// DEPARTMENT VIEW — show/hide full subtrees by department
+// =============================================================================
+
+/** Track which dept is currently in "dept view" mode (null = All). */
+let _ocActiveDeptView = null;
+
+/**
+ * Build the department pill bar from live employee data.
+ * Pills: "All" + one per unique department, sorted by headcount desc.
+ */
+function populateDeptView() {
+    const pillBar = document.getElementById('oc-dept-pills');
+    if (!pillBar) return;
+
+    const employees = SharedEmployeeStore.getAll();
+    const deptCounts = {};
+    employees.forEach(emp => {
+        const d = (emp.department || '').trim();
+        if (d) deptCounts[d] = (deptCounts[d] || 0) + 1;
+    });
+    const sorted = Object.entries(deptCounts).sort((a, b) => b[1] - a[1]);
+
+    const activeDept = _ocActiveDeptView;
+
+    pillBar.innerHTML = [['__all__', null]].concat(sorted).map(([key, count], idx) => {
+        const isAll = key === '__all__';
+        const label = isAll ? 'All Departments' : key;
+        const val = isAll ? '' : key;
+        const isActive = isAll ? !activeDept : activeDept === key;
+        const activeClass = isActive
+            ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+            : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:border-indigo-500/50 hover:text-white hover:bg-slate-700/80';
+        const countBadge = (!isAll && count != null)
+            ? `<span class="ml-1.5 text-[10px] font-bold opacity-60">${count}</span>`
+            : '';
+        return `<button
+            class="oc-dept-view-pill flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all duration-200 backdrop-blur-sm ${activeClass}"
+            style="animation: oc-pill-in 0.25s ease both; animation-delay: ${idx * 30}ms;"
+            data-dept="${val}">${label}${countBadge}</button>`;
+    }).join('');
+
+    // Bind click events
+    pillBar.querySelectorAll('.oc-dept-view-pill').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const dept = btn.dataset.dept || null;
+            _ocActiveDeptView = dept || null;
+            applyDeptView(_ocActiveDeptView);
+            // Re-render pills to reflect active state
+            populateDeptView();
+        });
+    });
+}
+
+/**
+ * Show only the subtree(s) belonging to `dept`.
+ * If dept is null/"", reset to showing everything.
+ *
+ * Strategy:
+ *  - Walk all DIRECT children of #oc-chart-hierarchy (root wrappers).
+ *  - For each root wrapper, check if ANY card in its subtree has data-department === dept.
+ *  - If yes → show. If no → hide.
+ *  - For the SHOWN subtrees, also hide sibling branches at deeper levels that don't contain
+ *    any employee from the dept. This gives the "dept head → all their reports" view.
+ */
+function applyDeptView(dept) {
+    const hierarchy = document.getElementById('oc-chart-hierarchy');
+    if (!hierarchy) return;
+
+    const allWrappers = hierarchy.querySelectorAll('.flex.flex-col.items-center');
+
+    if (!dept) {
+        // Reset: show everything
+        allWrappers.forEach(w => {
+            w.style.transition = 'opacity 0.3s, transform 0.3s';
+            w.style.opacity = '';
+            w.style.transform = '';
+            w.style.display = '';
+            w.style.pointerEvents = '';
+        });
+        return;
+    }
+
+    /**
+     * Recursively check if a wrapper's subtree contains any card
+     * with the given department. Returns true if at least one found.
+     */
+    function subtreeHasDept(wrapper, targetDept) {
+        const cards = wrapper.querySelectorAll('.org-card[data-department]');
+        for (const card of cards) {
+            if ((card.dataset.department || '').toLowerCase() === targetDept.toLowerCase()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Walk one wrapper's subtree.
+     * - If the CARD itself matches dept → show wrapper, show all its descendants.
+     * - Otherwise → dim siblings that don't match; keep ancestors visible.
+     */
+    function processWrapper(wrapper, targetDept) {
+        const card = wrapper.querySelector(':scope > .org-card');
+        const childrenRow = wrapper.querySelector(':scope > .relative.flex.justify-center');
+
+        if (!card) return;
+
+        const thisDept = (card.dataset.department || '').toLowerCase();
+        const matches = thisDept === targetDept.toLowerCase();
+
+        if (matches) {
+            // Show this wrapper and ALL descendants fully
+            showSubtree(wrapper);
+        } else if (childrenRow) {
+            // This node is an ancestor/sibling — keep it dimmed but visible
+            // and recurse into children
+            wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
+            wrapper.style.opacity = '0.18';
+            wrapper.style.transform = 'scale(0.96)';
+            wrapper.style.display = '';
+
+            // Show / hide child wrappers at the next level
+            const childWrappers = childrenRow.querySelectorAll(':scope > .flex.flex-col.items-center');
+            childWrappers.forEach(cw => {
+                if (subtreeHasDept(cw, targetDept)) {
+                    processWrapper(cw, targetDept);
+                } else {
+                    hideWrapper(cw);
+                }
+            });
+        } else {
+            // Leaf node, not matching dept
+            hideWrapper(wrapper);
+        }
+    }
+
+    function showSubtree(wrapper) {
+        wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
+        wrapper.style.opacity = '1';
+        wrapper.style.transform = '';
+        wrapper.style.display = '';
+        wrapper.style.pointerEvents = '';
+        // Show all descendants
+        wrapper.querySelectorAll('.flex.flex-col.items-center').forEach(w => {
+            w.style.transition = 'opacity 0.3s, transform 0.3s';
+            w.style.opacity = '1';
+            w.style.transform = '';
+            w.style.display = '';
+            w.style.pointerEvents = '';
+        });
+    }
+
+    function hideWrapper(wrapper) {
+        wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
+        wrapper.style.opacity = '0';
+        wrapper.style.transform = 'scale(0.9)';
+        wrapper.style.pointerEvents = 'none';
+        // Also hide all descendants
+        wrapper.querySelectorAll('.flex.flex-col.items-center').forEach(w => {
+            w.style.opacity = '0';
+            w.style.transform = 'scale(0.9)';
+            w.style.pointerEvents = 'none';
+        });
+    }
+
+    // Process each root-level wrapper
+    const rootWrappers = hierarchy.querySelectorAll(':scope > .flex.flex-col.items-center');
+    rootWrappers.forEach(rootWrapper => {
+        if (subtreeHasDept(rootWrapper, dept)) {
+            processWrapper(rootWrapper, dept);
+        } else {
+            hideWrapper(rootWrapper);
+        }
+    });
+}
+
 
 function applyFilters() {
     // Gather checked departments
@@ -798,6 +983,11 @@ function resetFilters() {
 
     // Apply
     applyFilters();
+
+    // Also reset department view
+    _ocActiveDeptView = null;
+    applyDeptView(null);
+    populateDeptView();
 }
 
 // ============================================================================

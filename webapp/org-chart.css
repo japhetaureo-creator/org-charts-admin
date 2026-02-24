@@ -1,5 +1,30 @@
 /* Organization Chart Styles */
 
+/* Department View Pill Bar */
+#oc-dept-view-bar {
+    background: linear-gradient(to bottom, rgba(15, 17, 21, 0.9) 75%, transparent);
+    padding-top: 8px;
+}
+
+@keyframes oc-pill-in {
+    from {
+        opacity: 0;
+        transform: translateY(-6px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.oc-dept-view-pill {
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+
+
 /* Canvas base + dot pattern background */
 #org-chart-canvas {
     background-color: #0f1115;
@@ -687,7 +712,7 @@ html.light .toggle-label {
 
 .oc-sidebar-filters {
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-                opacity 0.25s ease;
+        opacity 0.25s ease;
 }
 
 .oc-sidebar-filters.oc-filters-collapsed {
@@ -736,6 +761,7 @@ html.light .oc-filters-toggle-fab {
     border-color: rgba(0, 0, 0, 0.08);
     color: #64748b;
 }
+
 html.light .oc-filters-toggle-fab:hover {
     background: #fff;
     color: #334155;
