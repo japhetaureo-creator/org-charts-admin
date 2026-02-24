@@ -186,6 +186,10 @@ function _ocLoadHierarchy() {
         _ocReattachListeners();
         _ocUpdateAllDirectsBadges();
         _ocCenterChart();
+        // Re-apply active dept view if one is set
+        if (_ocActiveDeptView) {
+            applyDeptView(_ocActiveDeptView);
+        }
         return hierarchy.querySelectorAll('.org-card').length > 0;
     } catch (e) {
         console.error('[OC-LOAD] Failed to parse stored hierarchy:', e);
@@ -211,6 +215,10 @@ async function _ocSyncHierarchyFromFirestore() {
                 _ocReattachListeners();
                 _ocUpdateAllDirectsBadges();
                 _ocCenterChart();
+                // Re-apply active dept view if one is set
+                if (_ocActiveDeptView) {
+                    applyDeptView(_ocActiveDeptView);
+                }
             }
         } else {
             // Upload local hierarchy to Firestore if exists
