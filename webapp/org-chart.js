@@ -2416,30 +2416,28 @@ async function exportOrgChartPDF() {
             logging: false,
             removeContainer: true,
             onclone: (clonedDoc) => {
-                // Kill ALL external images and force dark backgrounds in the clone.
-                // CSS file org-chart.css has hardcoded background-image classes that
-                // re-apply in the clone. Also, html2canvas renders stacking contexts
-                // (created by z-index + position) on separate white canvases.
-                // Force EVERY element inside cards to have solid dark background.
-                const overrideStyle = clonedDoc.createElement('style');
-                overrideStyle.textContent = `
-                    #oc-chart-hierarchy,
-                    #oc-chart-hierarchy * {
-                        background-image: none !important;
-                        backdrop-filter: none !important;
-                        -webkit-backdrop-filter: none !important;
-                    }
-                    #oc-chart-hierarchy {
-                        background-color: #0f1115 !important;
-                    }
-                    #oc-chart-hierarchy .org-card,
-                    #oc-chart-hierarchy .glass-panel,
-                    #oc-chart-hierarchy .org-card *,
-                    #oc-chart-hierarchy .glass-panel * {
-                        background-color: #1e293b !important;
-                    }
-                `;
-                clonedDoc.head.appendChild(overrideStyle);
+                // NUCLEAR: Remove ALL stylesheets from the clone.
+                // Inline styles baked on the live DOM are preserved via cloneNode(true).
+                // This eliminates ANY possibility of CSS rules overriding our dark backgrounds.
+                // Known offenders: org-chart.css (light mode + hardcoded bg-images),
+                // Tailwind CDN styles, and any other generated CSS.
+                clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach(s => s.remove());
+
+                // Belt-and-suspenders: re-walk the cloned hierarchy and force dark bg
+                const clonedHier = clonedDoc.getElementById('oc-chart-hierarchy');
+                if (clonedHier) {
+                    clonedHier.style.cssText += '; background: #0f1115 !important; background-image: none !important;';
+                    clonedHier.querySelectorAll('*').forEach(el => {
+                        el.style.setProperty('background-image', 'none', 'important');
+                        el.style.setProperty('backdrop-filter', 'none', 'important');
+                        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
+                        // Force dark on cards and card children
+                        if (el.classList.contains('org-card') || el.classList.contains('glass-panel') || el.closest('.org-card')) {
+                            el.style.setProperty('background-color', '#1e293b', 'important');
+                        }
+                    });
+                }
+                console.log('[PDF Export] Stripped all stylesheets from clone, re-forced dark backgrounds');
             }
         });
 
