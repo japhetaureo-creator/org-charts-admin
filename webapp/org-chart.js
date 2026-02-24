@@ -1,4 +1,4 @@
-// Organization Chart Interactive Logic
+﻿// Organization Chart Interactive Logic
 // ============================================================================
 
 // ============================================================================
@@ -2273,299 +2273,207 @@ function shareOrgChart() {
 // EXPORT PDF FUNCTIONALITY
 // ============================================================================
 
-async function exportOrgChartPDF() {
+function exportOrgChartPDF() {
     const btn = document.querySelector('[data-action="export-pdf"]');
     const hier = document.getElementById('oc-chart-hierarchy');
-    const canvas = document.getElementById('org-chart-canvas');
 
     if (!hier) return;
-
-    // Check libraries are loaded
-    if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        alert('PDF export libraries are still loading. Please try again in a moment.');
-        return;
-    }
 
     // Loading state
     const originalHTML = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `
-            <span class="oc-pdf-spinner"></span>
-            <span>Generating…</span>
-        `;
+        btn.innerHTML = `<span class="oc-pdf-spinner"></span><span>Generating…</span>`;
     }
 
-    // Save current transform and temporarily reset it so we capture the full chart
+    const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
+    const now = new Date();
+    const timestamp = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const filename = `orgchart-${safeName}-${now.toISOString().slice(0, 10)}`;
+
+    // Snapshot the chart HTML (save/reset transform so full chart is captured)
     const savedTransform = hier.style.transform;
     const savedTransition = hier.style.transition;
     hier.style.transition = 'none';
-    hier.style.transform = 'translate(0px, 0px)';
+    hier.style.transform = 'none';
 
-    // Also temporarily disable overflow:hidden on canvas so html2canvas can see everything
-    const savedOverflow = canvas ? canvas.style.overflow : '';
-    if (canvas) canvas.style.overflow = 'visible';
+    // Clone and bake computed styles onto every element so they render
+    // correctly in the print window (no Tailwind CDN, no external CSS needed)
+    const clone = hier.cloneNode(true);
+    const liveEls = hier.querySelectorAll('*');
+    const cloneEls = clone.querySelectorAll('*');
 
-    // Get the actual company name
-    const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
-    const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    // Bake computed styles into clone inline styles
+    liveEls.forEach((el, i) => {
+        const cs = window.getComputedStyle(el);
+        const cel = cloneEls[i];
+        if (!cel) return;
 
-    // ── Nuclear approach: bake ALL computed styles as inline styles ─────────
-    // Tailwind CDN generates styles via JS. When html2canvas clones the DOM
-    // into an iframe, the Tailwind script does NOT re-execute — so all Tailwind
-    // utility classes produce ZERO CSS rules in the clone. The only reliable
-    // fix: read getComputedStyle() from the LIVE DOM and write key visual
-    // properties as inline styles, so they survive the clone.
+        // Build a concise inline style string with all visual properties
+        const bgImage = cs.backgroundImage;
+        const hasUrl = bgImage && bgImage !== 'none' && bgImage.includes('url(');
 
-    // Helper: composite a semi-transparent rgba() against a dark background
-    // to produce an opaque rgb() color. html2canvas internally renders against
-    // white, so we must pre-composite to prevent washed-out colors.
-    const DARK_BG = [15, 17, 21]; // #0f1115
-    function compositeRgba(rgbaStr) {
-        if (!rgbaStr) return rgbaStr;
-        // Match rgba(r, g, b, a) — if it's rgb() or opaque, return as-is
-        const m = rgbaStr.match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+))?\s*\)/);
-        if (!m) return rgbaStr;
-        const r = parseFloat(m[1]);
-        const g = parseFloat(m[2]);
-        const b = parseFloat(m[3]);
-        const a = m[4] !== undefined ? parseFloat(m[4]) : 1;
-        if (a >= 0.99) return rgbaStr; // already opaque
-        if (a < 0.01) return `rgb(${DARK_BG[0]}, ${DARK_BG[1]}, ${DARK_BG[2]})`; // fully transparent → dark bg
-        // Alpha-composite: result = fg * a + bg * (1 - a)
-        const rr = Math.round(r * a + DARK_BG[0] * (1 - a));
-        const rg = Math.round(g * a + DARK_BG[1] * (1 - a));
-        const rb = Math.round(b * a + DARK_BG[2] * (1 - a));
-        return `rgb(${rr}, ${rg}, ${rb})`;
+        // Background
+        if (hasUrl) {
+            // Preserve avatar images — they come from Firestore/localStorage, same-origin
+            cel.style.backgroundImage = bgImage;
+            cel.style.backgroundColor = cs.backgroundColor;
+        } else {
+            cel.style.backgroundImage = 'none';
+            cel.style.backgroundColor = cs.backgroundColor;
+        }
+
+        cel.style.color = cs.color;
+        cel.style.borderColor = cs.borderColor;
+        cel.style.borderLeftColor = cs.borderLeftColor;
+        cel.style.borderRightColor = cs.borderRightColor;
+        cel.style.borderTopColor = cs.borderTopColor;
+        cel.style.borderBottomColor = cs.borderBottomColor;
+        cel.style.borderWidth = cs.borderWidth;
+        cel.style.borderStyle = cs.borderStyle;
+        cel.style.borderRadius = cs.borderRadius;
+        cel.style.boxShadow = 'none'; // drop shadows — not needed for print
+        cel.style.backdropFilter = 'none';
+        cel.style.webkitBackdropFilter = 'none';
+        cel.style.opacity = cs.opacity;
+        cel.style.fontSize = cs.fontSize;
+        cel.style.fontWeight = cs.fontWeight;
+        cel.style.fontFamily = cs.fontFamily;
+        cel.style.lineHeight = cs.lineHeight;
+        cel.style.padding = cs.padding;
+        cel.style.margin = cs.margin;
+        cel.style.width = cs.width;
+        cel.style.height = cs.height;
+        cel.style.display = cs.display;
+        cel.style.flexDirection = cs.flexDirection;
+        cel.style.alignItems = cs.alignItems;
+        cel.style.justifyContent = cs.justifyContent;
+        cel.style.gap = cs.gap;
+        cel.style.flexShrink = cs.flexShrink;
+        cel.style.flexGrow = cs.flexGrow;
+        cel.style.position = cs.position;
+        cel.style.top = cs.top;
+        cel.style.left = cs.left;
+        cel.style.right = cs.right;
+        cel.style.bottom = cs.bottom;
+        cel.style.zIndex = cs.zIndex;
+        cel.style.overflow = cs.overflow;
+        cel.style.whiteSpace = cs.whiteSpace;
+        cel.style.textOverflow = cs.textOverflow;
+        cel.style.backgroundSize = cs.backgroundSize;
+        cel.style.backgroundPosition = cs.backgroundPosition;
+        cel.style.backgroundRepeat = cs.backgroundRepeat;
+        cel.style.minWidth = cs.minWidth;
+        cel.style.maxWidth = cs.maxWidth;
+        cel.style.transform = 'none'; // reset any transforms
+        cel.style.transition = 'none';
+        cel.style.animation = 'none';
+        cel.style.cursor = 'default';
+    });
+
+    // Restore live DOM transform
+    hier.style.transform = savedTransform;
+    hier.style.transition = savedTransition;
+
+    // Build the print window HTML
+    const printHTML = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${companyName} — Organization Chart</title>
+<style>
+  @page {
+    size: auto;
+    margin: 10mm;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  html, body {
+    background: #0f1115;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+  }
+  .pdf-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0 10px;
+    border-bottom: 2px solid #6366f1;
+    margin-bottom: 16px;
+  }
+  .pdf-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f1f5f9;
+  }
+  .pdf-date {
+    font-size: 11px;
+    color: #94a3b8;
+  }
+  .pdf-chart-wrap {
+    width: 100%;
+    overflow: visible;
+  }
+  #oc-chart-hierarchy {
+    transform: none !important;
+    transition: none !important;
+    position: relative !important;
+    background: #0f1115 !important;
+  }
+  .pdf-footer {
+    margin-top: 20px;
+    text-align: center;
+    font-size: 9px;
+    color: #475569;
+    border-top: 1px solid #1e293b;
+    padding-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="pdf-header">
+  <div class="pdf-title">${companyName} — Organization Chart</div>
+  <div class="pdf-date">Generated ${timestamp}</div>
+</div>
+<div class="pdf-chart-wrap">
+  ${clone.outerHTML}
+</div>
+<div class="pdf-footer">Confidential — Internal Use Only</div>
+<script>
+  // Auto-print and close after a short delay for rendering
+  window.onload = function() {
+    setTimeout(function() {
+      document.title = '${filename}';
+      window.print();
+      // window.close() after print — some browsers block this
+    }, 600);
+  };
+<\/script>
+</body>
+</html>`;
+
+    // Open print window
+    const printWin = window.open('', '_blank', 'width=1400,height=900');
+    if (!printWin) {
+        alert('Pop-up blocked. Please allow pop-ups for this site and try again.');
+        if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
+        return;
     }
 
-    const allElements = hier.querySelectorAll('*');
-    const savedInlineStyles = new Map();
+    printWin.document.open();
+    printWin.document.write(printHTML);
+    printWin.document.close();
 
-    // FIRST PASS: Save all original inline styles
-    allElements.forEach(el => {
-        savedInlineStyles.set(el, el.getAttribute('style') || '');
-    });
-    savedInlineStyles.set(hier, hier.getAttribute('style') || '');
-
-    // Debug: log card count
-    const orgCards = hier.querySelectorAll('.org-card');
-    console.log(`[PDF Export] Found ${orgCards.length} org-cards, ${allElements.length} total elements`);
-
-    // CRITICAL FIX: ui-avatars.com sends duplicate Access-Control-Allow-Origin headers
-    // which causes CORS failures. html2canvas then renders white rectangles for cards
-    // with failed images. Solution: strip ALL external background-image URLs and replace
-    // with colored placeholders before capture.
-    allElements.forEach(el => {
-        const cs = getComputedStyle(el);
-        const bgImage = cs.backgroundImage;
-        const hasExternalImage = bgImage && bgImage !== 'none' && bgImage.includes('url(');
-        const isCard = el.classList.contains('org-card') || el.classList.contains('glass-panel');
-        const isInsideCard = !isCard && el.closest('.org-card');
-
-        if (isCard) {
-            // Card element: force solid dark background
-            el.style.setProperty('background', '#1e293b', 'important');
-            el.style.setProperty('backdrop-filter', 'none', 'important');
-            el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-        } else if (isInsideCard && hasExternalImage) {
-            // Avatar element: strip external image, use indigo placeholder
-            el.style.setProperty('background', '#4f46e5', 'important');
-            el.style.setProperty('background-image', 'none', 'important');
-        } else if (isInsideCard) {
-            // CRITICAL: ALL card children must have solid dark background (#1e293b),
-            // NOT transparent. html2canvas renders stacking contexts (relative z-10)
-            // on separate canvases that start white. Transparent bg = white in PDF.
-            el.style.setProperty('background', '#1e293b', 'important');
-            el.style.setProperty('background-image', 'none', 'important');
-        } else if (hasExternalImage) {
-            // Non-card element with external image — strip image, use dark bg
-            el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
-            el.style.setProperty('background-image', 'none', 'important');
-        } else {
-            // Wrapper divs, connectors, etc — force dark
-            el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
-        }
-
-        // Always bake text and border colors
-        el.style.setProperty('color', cs.color, 'important');
-        el.style.setProperty('border-color', cs.borderColor, 'important');
-        el.style.setProperty('border-left-color', cs.borderLeftColor, 'important');
-        el.style.setProperty('border-right-color', cs.borderRightColor, 'important');
-        el.style.setProperty('border-top-color', cs.borderTopColor, 'important');
-        el.style.setProperty('border-bottom-color', cs.borderBottomColor, 'important');
-        el.style.setProperty('box-shadow', cs.boxShadow, 'important');
-        el.style.setProperty('opacity', cs.opacity);
-        el.style.setProperty('backdrop-filter', 'none', 'important');
-        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-    });
-
-    // Force hierarchy container dark bg
-    hier.style.setProperty('background', '#0f1115', 'important');
-
-    console.log('[PDF Export] Style baking complete, starting html2canvas...');
-
-    try {
-        // Let the DOM repaint with inline styles applied
-        await new Promise(r => setTimeout(r, 100));
-
-        const captureCanvas = await html2canvas(hier, {
-            scale: 2,
-            backgroundColor: '#0f1115',
-            allowTaint: false,
-            logging: false,
-            removeContainer: true,
-            onclone: (clonedDoc) => {
-                // NUCLEAR: Remove ALL stylesheets from the clone.
-                // Inline styles baked on the live DOM are preserved via cloneNode(true).
-                // This eliminates ANY possibility of CSS rules overriding our dark backgrounds.
-                // Known offenders: org-chart.css (light mode + hardcoded bg-images),
-                // Tailwind CDN styles, and any other generated CSS.
-                clonedDoc.querySelectorAll('style, link[rel="stylesheet"]').forEach(s => s.remove());
-
-                // Belt-and-suspenders: re-walk the cloned hierarchy and force dark bg
-                const clonedHier = clonedDoc.getElementById('oc-chart-hierarchy');
-                if (clonedHier) {
-                    clonedHier.style.cssText += '; background: #0f1115 !important; background-image: none !important;';
-                    clonedHier.querySelectorAll('*').forEach(el => {
-                        el.style.setProperty('background-image', 'none', 'important');
-                        el.style.setProperty('backdrop-filter', 'none', 'important');
-                        el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-                        // Force dark on cards and card children
-                        if (el.classList.contains('org-card') || el.classList.contains('glass-panel') || el.closest('.org-card')) {
-                            el.style.setProperty('background-color', '#1e293b', 'important');
-                        }
-                    });
-                }
-                console.log('[PDF Export] Stripped all stylesheets from clone, re-forced dark backgrounds');
-            }
-        });
-
-        // Restore ALL original inline styles
-        allElements.forEach(el => {
-            const original = savedInlineStyles.get(el);
-            if (original) {
-                el.setAttribute('style', original);
-            } else {
-                el.removeAttribute('style');
-            }
-        });
-
-        // Restore transform and overflow
-        hier.style.transform = savedTransform;
-        hier.style.transition = savedTransition;
-        if (canvas) canvas.style.overflow = savedOverflow;
-
-        const { jsPDF } = window.jspdf;
-        const imgData = captureCanvas.toDataURL('image/png');
-
-        // Determine orientation and page size based on chart dimensions
-        const chartW = captureCanvas.width / 2; // account for scale:2
-        const chartH = captureCanvas.height / 2;
-        const isLandscape = chartW > chartH;
-
-        // Use a custom page size that matches the chart aspect ratio
-        // so the chart fills the entire page (with small margins)
-        const margin = 10; // mm
-        const headerH = 18; // mm
-        const footerH = 10; // mm
-        const maxW = 420; // A3-ish width limit
-        const maxH = 297; // A3-ish height limit
-
-        const contentRatio = chartW / chartH;
-        let pdfW, pdfH;
-        if (isLandscape) {
-            pdfW = Math.min(maxW, 297); // landscape A4 width
-            const contentH_avail = (pdfW - margin * 2) / contentRatio;
-            pdfH = contentH_avail + headerH + footerH + margin;
-            if (pdfH > maxH) {
-                pdfH = maxH;
-            }
-        } else {
-            pdfH = Math.min(maxH, 420);
-            const contentW_avail = (pdfH - headerH - footerH - margin) * contentRatio;
-            pdfW = contentW_avail + margin * 2;
-            if (pdfW > maxW) pdfW = maxW;
-        }
-
-        const doc = new jsPDF({
-            orientation: isLandscape ? 'landscape' : 'portrait',
-            unit: 'mm',
-            format: [pdfW, pdfH]
-        });
-
-        const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
-
-        // Available content area
-        const contentW = pageW - margin * 2;
-        const contentH = pageH - headerH - footerH - margin;
-
-        // Scale image to fill content area
-        const ratio = Math.min(contentW / chartW, contentH / chartH);
-        const imgW = chartW * ratio;
-        const imgH = chartH * ratio;
-        const imgX = (pageW - imgW) / 2;
-        const imgY = headerH + 2;
-
-        // Dark background
-        doc.setFillColor(15, 17, 21);
-        doc.rect(0, 0, pageW, pageH, 'F');
-
-        // Title
-        doc.setFontSize(14);
-        doc.setTextColor(255, 255, 255);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`${companyName} — Organization Chart`, margin, 12);
-
-        // Timestamp
-        const now = new Date();
-        const timestamp = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-        doc.setFontSize(8);
-        doc.setTextColor(148, 163, 184);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Generated ${timestamp}`, pageW - margin, 12, { align: 'right' });
-
-        // Separator line
-        doc.setDrawColor(99, 102, 241);
-        doc.setLineWidth(0.5);
-        doc.line(margin, headerH, pageW - margin, headerH);
-
-        // Chart image
-        doc.addImage(imgData, 'PNG', imgX, imgY, imgW, imgH);
-
-        // Footer
-        doc.setFontSize(7);
-        doc.setTextColor(71, 85, 105);
-        doc.text('Confidential — Internal Use Only', pageW / 2, pageH - 4, { align: 'center' });
-
-        // Save
-        const filename = `orgchart-${safeName}-${now.toISOString().slice(0, 10)}.pdf`;
-        doc.save(filename);
-
-    } catch (err) {
-        console.error('PDF export failed:', err);
-        // Restore all original inline styles on error
-        allElements.forEach(el => {
-            const original = savedInlineStyles.get(el);
-            if (original) {
-                el.setAttribute('style', original);
-            } else {
-                el.removeAttribute('style');
-            }
-        });
-        hier.style.transform = savedTransform;
-        hier.style.transition = savedTransition;
-        if (canvas) canvas.style.overflow = savedOverflow;
-        alert('PDF export failed. Please try again.');
-    } finally {
-        // Ensure no stale override stylesheet remains
-        document.getElementById('oc-pdf-export-overrides')?.remove();
-        // Restore button
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = originalHTML;
-        }
+    // Restore button
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
     }
 }
 
