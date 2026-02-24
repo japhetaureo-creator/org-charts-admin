@@ -2364,24 +2364,20 @@ async function exportOrgChartPDF() {
         const isInsideCard = !isCard && el.closest('.org-card');
 
         if (isCard) {
-            // Card element: force solid dark background, kill any backdrop-filter
+            // Card element: force solid dark background
             el.style.setProperty('background', '#1e293b', 'important');
             el.style.setProperty('backdrop-filter', 'none', 'important');
             el.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
         } else if (isInsideCard && hasExternalImage) {
-            // Avatar element with background-image: url(...) - STRIP the image entirely
-            // to prevent CORS failures. Replace with a solid indigo placeholder.
+            // Avatar element: strip external image, use indigo placeholder
             el.style.setProperty('background', '#4f46e5', 'important');
             el.style.setProperty('background-image', 'none', 'important');
         } else if (isInsideCard) {
-            // Child of a card: either transparent (shows parent dark bg) or composited
-            const bgColor = cs.backgroundColor;
-            const isTransparent = !bgColor || bgColor === 'transparent' || bgColor === 'rgba(0, 0, 0, 0)';
-            if (isTransparent) {
-                el.style.setProperty('background', 'transparent', 'important');
-            } else {
-                el.style.setProperty('background', compositeRgba(bgColor), 'important');
-            }
+            // CRITICAL: ALL card children must have solid dark background (#1e293b),
+            // NOT transparent. html2canvas renders stacking contexts (relative z-10)
+            // on separate canvases that start white. Transparent bg = white in PDF.
+            el.style.setProperty('background', '#1e293b', 'important');
+            el.style.setProperty('background-image', 'none', 'important');
         } else if (hasExternalImage) {
             // Non-card element with external image — strip image, use dark bg
             el.style.setProperty('background', compositeRgba(cs.backgroundColor), 'important');
@@ -2417,30 +2413,33 @@ async function exportOrgChartPDF() {
             scale: 2,
             backgroundColor: '#0f1115',
             allowTaint: false,
-            logging: true,
+            logging: false,
             removeContainer: true,
             onclone: (clonedDoc) => {
-                // CRITICAL: The CSS file org-chart.css has hardcoded classes like
-                // .sarah-jenkins-bg { background-image: url("lh3.googleusercontent.com/...") }
-                // These CSS rules re-apply background-image in the clone, causing CORS failures
-                // and white rectangles. Kill ALL background-images in the cloned hierarchy.
-                const killImagesStyle = clonedDoc.createElement('style');
-                killImagesStyle.textContent = `
+                // Kill ALL external images and force dark backgrounds in the clone.
+                // CSS file org-chart.css has hardcoded background-image classes that
+                // re-apply in the clone. Also, html2canvas renders stacking contexts
+                // (created by z-index + position) on separate white canvases.
+                // Force EVERY element inside cards to have solid dark background.
+                const overrideStyle = clonedDoc.createElement('style');
+                overrideStyle.textContent = `
+                    #oc-chart-hierarchy,
                     #oc-chart-hierarchy * {
                         background-image: none !important;
                         backdrop-filter: none !important;
                         -webkit-backdrop-filter: none !important;
                     }
-                    #oc-chart-hierarchy .org-card,
-                    #oc-chart-hierarchy .glass-panel {
-                        background: #1e293b !important;
-                    }
                     #oc-chart-hierarchy {
-                        background: #0f1115 !important;
+                        background-color: #0f1115 !important;
+                    }
+                    #oc-chart-hierarchy .org-card,
+                    #oc-chart-hierarchy .glass-panel,
+                    #oc-chart-hierarchy .org-card *,
+                    #oc-chart-hierarchy .glass-panel * {
+                        background-color: #1e293b !important;
                     }
                 `;
-                clonedDoc.head.appendChild(killImagesStyle);
-                console.log('[PDF Export] Injected kill-images stylesheet into clone');
+                clonedDoc.head.appendChild(overrideStyle);
             }
         });
 
