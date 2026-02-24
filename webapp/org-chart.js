@@ -277,39 +277,38 @@ function _ocApplyZoom() {
 
 /**
  * Center the org chart tree in the visible canvas after load.
- * Resets panX/panY so the root of the tree appears near the top-center
- * of the viewport, accounting for the current zoom level.
+ * Uses the scroll position of the overflow container to bring the root
+ * card into the horizontal centre and just below the breadcrumb.
  */
 function _ocCenterChart() {
-    // Reset pan first so we measure from a known baseline
+    // Clear any previous pan so the transform is pure scale
     OrgChartState.panX = 0;
     OrgChartState.panY = 0;
     _ocApplyTransform();
 
-    // Wait for one animation frame so the layout has reflowed
-    requestAnimationFrame(() => {
+    // Small delay so Firestore re-render can settle before we measure
+    setTimeout(() => {
         const canvas = document.getElementById('org-chart-canvas');
         const hier = document.getElementById('oc-chart-hierarchy');
         if (!canvas || !hier) return;
 
-        const canvasRect = canvas.getBoundingClientRect();
-
-        // Find the first root-level card (top of the tree)
+        // Find the first root card
         const rootCard = hier.querySelector('.org-card');
         if (!rootCard) return;
+
+        // The canvas itself is the scroll container (overflow-auto)
         const rootRect = rootCard.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
 
-        // Horizontal: centre the root card over the canvas centre
-        const rootCardCentreX = rootRect.left + rootRect.width / 2;
-        const canvasCentreX = canvasRect.left + canvasRect.width / 2;
-        OrgChartState.panX = canvasCentreX - rootCardCentreX;
+        // Horizontal scroll: centre the root card in the visible width
+        const rootCentreXInCanvas = rootCard.offsetLeft + (rootRect.width / OrgChartState.zoom) / 2;
+        const visibleWidth = canvas.clientWidth;
+        canvas.scrollLeft = (rootCentreXInCanvas * OrgChartState.zoom) - (visibleWidth / 2);
 
-        // Vertical: 40 px padding from top so the card isn't flush with the edge
-        const topPadding = 40;
-        OrgChartState.panY = (canvasRect.top + topPadding) - rootRect.top;
-
-        _ocApplyTransform(hier);
-    });
+        // Vertical scroll: bring root card near the top with small padding
+        // The hierarchy's offsetTop already accounts for the pill bar + breadcrumb
+        canvas.scrollTop = 0; // start from top
+    }, 150);
 }
 
 
