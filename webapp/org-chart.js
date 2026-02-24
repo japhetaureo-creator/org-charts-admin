@@ -62,7 +62,7 @@ function _ocBuildTree(tree, container) {
         const emp = SharedEmployeeStore.getById(node.id);
         if (!emp) return; // employee deleted, skip
 
-        const card = createOrgCard(emp);
+        const card = createOrgCard(emp, undefined, node.children ? node.children.length : 0);
         const wrapper = document.createElement('div');
         wrapper.className = 'flex flex-col items-center';
         wrapper.appendChild(card);
@@ -207,6 +207,13 @@ setTimeout(() => _ocSyncHierarchyFromFirestore(), 1200);
 
 function _ocReattachListeners() {
     document.querySelectorAll('#oc-chart-hierarchy .org-card').forEach(card => {
+        const _canDrag = typeof AuthStore !== 'undefined' ? AuthStore.can('edit') : true;
+        if (!_canDrag) {
+            // Strip any existing drag listener for viewers/guests
+            if (card._ocMouseDown) card.removeEventListener('mousedown', card._ocMouseDown);
+            card._ocMouseDown = null;
+            return;
+        }
         if (card._ocMouseDown) card.removeEventListener('mousedown', card._ocMouseDown);
         card._ocMouseDown = (e) => ocDragMouseDown(e, card);
         card.addEventListener('mousedown', card._ocMouseDown);
@@ -2036,7 +2043,7 @@ async function deleteEmployeeFromFirebase(employeeId) {
  * Creates a unified, premium card element for an employee.
  * Ensures consistent design across all levels (CEO, VP, Director, etc.)
  */
-function createOrgCard(emp, level = 'individual') {
+function createOrgCard(emp, level = 'individual', directsCount = 0) {
     const card = document.createElement('div');
 
     // Determine level-specific styles
@@ -2114,7 +2121,7 @@ function createOrgCard(emp, level = 'individual') {
             <div class="flex items-center gap-2">
                 <div class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 border border-white/5">
                     <span class="material-symbols-outlined !text-sm ${iconColor}">supervisor_account</span>
-                    <span class="text-xs font-medium text-slate-300">${emp.reportsCount || 0} ${statsLabel}</span>
+                    <span class="text-xs font-medium text-slate-300">${directsCount} ${statsLabel}</span>
                 </div>
                 <span data-oc-field="status" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ring-1 ring-inset ${statusBadgeColor} ${showStatusBadge ? '' : 'hidden'}">
                     <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusLabel}
@@ -2129,8 +2136,11 @@ function createOrgCard(emp, level = 'individual') {
         </div>
     `;
 
-    // Re-attach mouse event listeners
-    card.addEventListener('mousedown', (e) => ocDragMouseDown(e, card));
+    // Only attach drag if the user has edit permission
+    const _canDrag = typeof AuthStore !== 'undefined' ? AuthStore.can('edit') : true;
+    if (_canDrag) {
+        card.addEventListener('mousedown', (e) => ocDragMouseDown(e, card));
+    }
 
     return card;
 }
