@@ -792,113 +792,98 @@ function applyDeptView(dept) {
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     if (!hierarchy) return;
 
-    const allWrappers = hierarchy.querySelectorAll('.flex.flex-col.items-center');
+    // Reset first: clear all inline styles so a re-selection starts clean
+    hierarchy.querySelectorAll('.flex.flex-col.items-center').forEach(w => {
+        w.style.display = '';
+        w.style.opacity = '';
+        w.style.transform = '';
+        w.style.pointerEvents = '';
+        w.style.transition = '';
+    });
 
-    if (!dept) {
-        // Reset: show everything
-        allWrappers.forEach(w => {
-            w.style.transition = 'opacity 0.3s, transform 0.3s';
-            w.style.opacity = '';
-            w.style.transform = '';
-            w.style.display = '';
-            w.style.pointerEvents = '';
-        });
-        return;
-    }
+    if (!dept) return; // "All Departments" — just show everything
 
     /**
      * Recursively check if a wrapper's subtree contains any card
-     * with the given department. Returns true if at least one found.
+     * with the given department.
      */
     function subtreeHasDept(wrapper, targetDept) {
-        const cards = wrapper.querySelectorAll('.org-card[data-department]');
-        for (const card of cards) {
-            if ((card.dataset.department || '').toLowerCase() === targetDept.toLowerCase()) {
-                return true;
-            }
+        const lc = targetDept.toLowerCase();
+        for (const card of wrapper.querySelectorAll('.org-card[data-department]')) {
+            if ((card.dataset.department || '').toLowerCase() === lc) return true;
         }
         return false;
     }
 
     /**
-     * Walk one wrapper's subtree.
-     * - If the CARD itself matches dept → show wrapper, show all its descendants.
-     * - Otherwise → dim siblings that don't match; keep ancestors visible.
+     * Recursively walk a wrapper:
+     * - Wrapper IS the dept match     → show it + entire subtree fully
+     * - Wrapper is an ancestor        → show at full opacity, recurse into children,
+     *                                   hide siblings that have no dept members
+     * - Wrapper has no dept members   → display:none (removed from layout)
      */
     function processWrapper(wrapper, targetDept) {
         const card = wrapper.querySelector(':scope > .org-card');
-        const childrenRow = wrapper.querySelector(':scope > .relative.flex.justify-center');
-
         if (!card) return;
 
         const thisDept = (card.dataset.department || '').toLowerCase();
-        const matches = thisDept === targetDept.toLowerCase();
+        const matchesDept = thisDept === targetDept.toLowerCase();
+        const childrenRow = wrapper.querySelector(':scope > .relative.flex.justify-center');
 
-        if (matches) {
-            // Show this wrapper and ALL descendants fully
+        if (matchesDept) {
+            // Dept head found — show this node and ALL of its descendants
             showSubtree(wrapper);
-        } else if (childrenRow) {
-            // This node is an ancestor/sibling — keep it dimmed but visible
-            // and recurse into children
-            wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
-            wrapper.style.opacity = '0.18';
-            wrapper.style.transform = 'scale(0.96)';
-            wrapper.style.display = '';
+            return;
+        }
 
-            // Show / hide child wrappers at the next level
-            const childWrappers = childrenRow.querySelectorAll(':scope > .flex.flex-col.items-center');
-            childWrappers.forEach(cw => {
+        if (childrenRow && subtreeHasDept(wrapper, targetDept)) {
+            // Ancestor node — show it fully, then selectively process children
+            show(wrapper);
+            childrenRow.querySelectorAll(':scope > .flex.flex-col.items-center').forEach(cw => {
                 if (subtreeHasDept(cw, targetDept)) {
                     processWrapper(cw, targetDept);
                 } else {
-                    hideWrapper(cw);
+                    hide(cw);
                 }
             });
         } else {
-            // Leaf node, not matching dept
-            hideWrapper(wrapper);
+            // No dept members here — remove from layout entirely
+            hide(wrapper);
         }
     }
 
-    function showSubtree(wrapper) {
-        wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
+    /** Show a single wrapper at full opacity */
+    function show(wrapper) {
+        wrapper.style.display = '';
         wrapper.style.opacity = '1';
         wrapper.style.transform = '';
-        wrapper.style.display = '';
         wrapper.style.pointerEvents = '';
-        // Show all descendants
+    }
+
+    /** Show a wrapper AND all its descendant wrappers */
+    function showSubtree(wrapper) {
+        show(wrapper);
+        wrapper.querySelectorAll('.flex.flex-col.items-center').forEach(show);
+    }
+
+    /** Remove a wrapper and its subtree from the layout entirely */
+    function hide(wrapper) {
+        wrapper.style.display = 'none';
         wrapper.querySelectorAll('.flex.flex-col.items-center').forEach(w => {
-            w.style.transition = 'opacity 0.3s, transform 0.3s';
-            w.style.opacity = '1';
-            w.style.transform = '';
-            w.style.display = '';
-            w.style.pointerEvents = '';
+            w.style.display = 'none';
         });
     }
 
-    function hideWrapper(wrapper) {
-        wrapper.style.transition = 'opacity 0.3s, transform 0.3s';
-        wrapper.style.opacity = '0';
-        wrapper.style.transform = 'scale(0.9)';
-        wrapper.style.pointerEvents = 'none';
-        // Also hide all descendants
-        wrapper.querySelectorAll('.flex.flex-col.items-center').forEach(w => {
-            w.style.opacity = '0';
-            w.style.transform = 'scale(0.9)';
-            w.style.pointerEvents = 'none';
-        });
-    }
-
-    // Process each root-level wrapper
-    const rootWrappers = hierarchy.querySelectorAll(':scope > .flex.flex-col.items-center');
-    rootWrappers.forEach(rootWrapper => {
-        if (subtreeHasDept(rootWrapper, dept)) {
-            processWrapper(rootWrapper, dept);
+    // Process every root-level wrapper
+    hierarchy.querySelectorAll(':scope > .flex.flex-col.items-center').forEach(rw => {
+        if (subtreeHasDept(rw, dept)) {
+            processWrapper(rw, dept);
         } else {
-            hideWrapper(rootWrapper);
+            hide(rw);
         }
     });
 }
+
 
 
 function applyFilters() {
