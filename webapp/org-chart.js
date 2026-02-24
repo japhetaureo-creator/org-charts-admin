@@ -2270,6 +2270,7 @@ function shareOrgChart() {
 }
 
 // ============================================================================
+// ============================================================================
 // EXPORT PDF FUNCTIONALITY
 // ============================================================================
 
@@ -2283,40 +2284,36 @@ function exportOrgChartPDF() {
     const originalHTML = btn ? btn.innerHTML : '';
     if (btn) {
         btn.disabled = true;
-        btn.innerHTML = `<span class="oc-pdf-spinner"></span><span>Generating…</span>`;
+        btn.innerHTML = '<span class="oc-pdf-spinner"></span><span>Generating\u2026</span>';
     }
 
     const companyName = (typeof CompanySettings !== 'undefined') ? CompanySettings.get().name : 'Organization';
     const now = new Date();
     const timestamp = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const safeName = companyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const filename = `orgchart-${safeName}-${now.toISOString().slice(0, 10)}`;
+    const filename = 'orgchart-' + safeName + '-' + now.toISOString().slice(0, 10);
 
-    // Snapshot the chart HTML (save/reset transform so full chart is captured)
+    // Reset transform so the full chart is visible for cloning
     const savedTransform = hier.style.transform;
     const savedTransition = hier.style.transition;
     hier.style.transition = 'none';
     hier.style.transform = 'none';
 
-    // Clone and bake computed styles onto every element so they render
-    // correctly in the print window (no Tailwind CDN, no external CSS needed)
+    // Clone the chart and bake all computed styles as inline styles
+    // so the print window renders correctly without any external CSS
     const clone = hier.cloneNode(true);
-    const liveEls = hier.querySelectorAll('*');
-    const cloneEls = clone.querySelectorAll('*');
+    const liveEls = Array.from(hier.querySelectorAll('*'));
+    const cloneEls = Array.from(clone.querySelectorAll('*'));
 
-    // Bake computed styles into clone inline styles
-    liveEls.forEach((el, i) => {
-        const cs = window.getComputedStyle(el);
-        const cel = cloneEls[i];
+    liveEls.forEach(function (el, i) {
+        var cs = window.getComputedStyle(el);
+        var cel = cloneEls[i];
         if (!cel) return;
 
-        // Build a concise inline style string with all visual properties
-        const bgImage = cs.backgroundImage;
-        const hasUrl = bgImage && bgImage !== 'none' && bgImage.includes('url(');
+        var bgImage = cs.backgroundImage;
+        var hasUrl = bgImage && bgImage !== 'none' && bgImage.includes('url(');
 
-        // Background
         if (hasUrl) {
-            // Preserve avatar images — they come from Firestore/localStorage, same-origin
             cel.style.backgroundImage = bgImage;
             cel.style.backgroundColor = cs.backgroundColor;
         } else {
@@ -2326,14 +2323,10 @@ function exportOrgChartPDF() {
 
         cel.style.color = cs.color;
         cel.style.borderColor = cs.borderColor;
-        cel.style.borderLeftColor = cs.borderLeftColor;
-        cel.style.borderRightColor = cs.borderRightColor;
-        cel.style.borderTopColor = cs.borderTopColor;
-        cel.style.borderBottomColor = cs.borderBottomColor;
         cel.style.borderWidth = cs.borderWidth;
         cel.style.borderStyle = cs.borderStyle;
         cel.style.borderRadius = cs.borderRadius;
-        cel.style.boxShadow = 'none'; // drop shadows — not needed for print
+        cel.style.boxShadow = 'none';
         cel.style.backdropFilter = 'none';
         cel.style.webkitBackdropFilter = 'none';
         cel.style.opacity = cs.opacity;
@@ -2366,100 +2359,77 @@ function exportOrgChartPDF() {
         cel.style.backgroundRepeat = cs.backgroundRepeat;
         cel.style.minWidth = cs.minWidth;
         cel.style.maxWidth = cs.maxWidth;
-        cel.style.transform = 'none'; // reset any transforms
+        cel.style.transform = 'none';
         cel.style.transition = 'none';
         cel.style.animation = 'none';
         cel.style.cursor = 'default';
     });
 
-    // Restore live DOM transform
+    // Restore live DOM
     hier.style.transform = savedTransform;
     hier.style.transition = savedTransition;
 
-    // Build the print window HTML
-    const printHTML = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>${companyName} — Organization Chart</title>
-<style>
-  @page {
-    size: auto;
-    margin: 10mm;
-  }
-  * {
-    box-sizing: border-box;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  html, body {
-    background: #0f1115;
-    color: #e2e8f0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    margin: 0;
-    padding: 0;
-  }
-  .pdf-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0 10px;
-    border-bottom: 2px solid #6366f1;
-    margin-bottom: 16px;
-  }
-  .pdf-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #f1f5f9;
-  }
-  .pdf-date {
-    font-size: 11px;
-    color: #94a3b8;
-  }
-  .pdf-chart-wrap {
-    width: 100%;
-    overflow: visible;
-  }
-  #oc-chart-hierarchy {
-    transform: none !important;
-    transition: none !important;
-    position: relative !important;
-    background: #0f1115 !important;
-  }
-  .pdf-footer {
-    margin-top: 20px;
-    text-align: center;
-    font-size: 9px;
-    color: #475569;
-    border-top: 1px solid #1e293b;
-    padding-top: 8px;
-  }
-</style>
-</head>
-<body>
-<div class="pdf-header">
-  <div class="pdf-title">${companyName} — Organization Chart</div>
-  <div class="pdf-date">Generated ${timestamp}</div>
-</div>
-<div class="pdf-chart-wrap">
-  ${clone.outerHTML}
-</div>
-<div class="pdf-footer">Confidential — Internal Use Only</div>
-<script>
-  // Auto-print and close after a short delay for rendering
-  window.onload = function() {
-    setTimeout(function() {
-      document.title = '${filename}';
-      window.print();
-      // window.close() after print — some browsers block this
-    }, 600);
-  };
-<\/script>
-</body>
-</html>`;
+    // Serialize clone HTML
+    var cloneHTML = clone.outerHTML;
 
-    // Open print window
-    const printWin = window.open('', '_blank', 'width=1400,height=900');
+    // Build print window HTML
+    var printHTML = '<!DOCTYPE html>\n' +
+        '<html>\n' +
+        '<head>\n' +
+        '<meta charset="utf-8">\n' +
+        '<title>' + companyName + ' \u2014 Organization Chart</title>\n' +
+        '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+        '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+        '<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">\n' +
+        '<style>\n' +
+        '@page { size: landscape; margin: 8mm; }\n' +
+        '* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
+        'html, body { background: #0f1115; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 12px; }\n' +
+        '.pdf-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 2px solid #6366f1; margin-bottom: 12px; }\n' +
+        '.pdf-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }\n' +
+        '.pdf-date { font-size: 10px; color: #94a3b8; }\n' +
+        '.pdf-wrap { width: 100%; overflow: visible; transform-origin: top left; }\n' +
+        '#oc-chart-hierarchy { transform: none !important; transition: none !important; position: relative !important; left: auto !important; top: auto !important; background: #0f1115 !important; overflow: visible !important; }\n' +
+        '[data-action="collapse"], .oc-edit-controls, [data-action="edit"], [data-action="add-child"], [data-action="delete"] { display: none !important; }\n' +
+        '.pdf-footer { margin-top: 16px; text-align: center; font-size: 8px; color: #475569; border-top: 1px solid #1e293b; padding-top: 6px; }\n' +
+        '.material-symbols-outlined { font-family: "Material Symbols Outlined" !important; font-style: normal; font-weight: normal; font-variant: normal; text-transform: none; line-height: 1; letter-spacing: normal; word-wrap: normal; white-space: nowrap; direction: ltr; font-feature-settings: "liga"; -webkit-font-smoothing: antialiased; }\n' +
+        '</style>\n' +
+        '</head>\n' +
+        '<body>\n' +
+        '<div class="pdf-header">' +
+        '<div class="pdf-title">' + companyName + ' \u2014 Organization Chart</div>' +
+        '<div class="pdf-date">Generated ' + timestamp + '</div>' +
+        '</div>\n' +
+        '<div class="pdf-wrap" id="pdf-wrap">\n' + cloneHTML + '\n</div>\n' +
+        '<div class="pdf-footer">Confidential \u2014 Internal Use Only</div>\n' +
+        '<script>\n' +
+        'function scaleToFit() {\n' +
+        '  var wrap = document.getElementById("pdf-wrap");\n' +
+        '  var hier = wrap ? wrap.querySelector("#oc-chart-hierarchy") : null;\n' +
+        '  if (!wrap || !hier) return;\n' +
+        '  var pageW = document.documentElement.clientWidth - 24;\n' +
+        '  var chartW = hier.scrollWidth;\n' +
+        '  if (chartW > pageW) {\n' +
+        '    var scale = pageW / chartW;\n' +
+        '    wrap.style.transform = "scale(" + scale + ")";\n' +
+        '    wrap.style.height = (hier.scrollHeight * scale) + "px";\n' +
+        '  }\n' +
+        '}\n' +
+        'window.onload = function() {\n' +
+        '  scaleToFit();\n' +
+        '  document.title = "' + filename + '";\n' +
+        '  var doPrint = function() { window.print(); };\n' +
+        '  if (document.fonts && document.fonts.ready) {\n' +
+        '    document.fonts.ready.then(function() { setTimeout(doPrint, 300); });\n' +
+        '  } else {\n' +
+        '    setTimeout(doPrint, 2000);\n' +
+        '  }\n' +
+        '};\n' +
+        '<\/script>\n' +
+        '</body>\n' +
+        '</html>';
+
+    var printWin = window.open('', '_blank', 'width=1400,height=900');
     if (!printWin) {
         alert('Pop-up blocked. Please allow pop-ups for this site and try again.');
         if (btn) { btn.disabled = false; btn.innerHTML = originalHTML; }
@@ -2470,7 +2440,6 @@ function exportOrgChartPDF() {
     printWin.document.write(printHTML);
     printWin.document.close();
 
-    // Restore button
     if (btn) {
         btn.disabled = false;
         btn.innerHTML = originalHTML;
