@@ -2390,7 +2390,7 @@ function exportOrgChartPDF() {
         '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
         '<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">\n' +
         '<style>\n' +
-        '@page { size: landscape; margin: 8mm; }\n' +
+        '@page { size: auto; margin: 8mm; }\n' +
         '* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }\n' +
         'html, body { background: #0f1115; color: #e2e8f0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 12px; }\n' +
         '.pdf-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 2px solid #6366f1; margin-bottom: 12px; }\n' +
@@ -2411,29 +2411,30 @@ function exportOrgChartPDF() {
         '<div class="pdf-wrap" id="pdf-wrap">\n' + cloneHTML + '\n</div>\n' +
         '<div class="pdf-footer">Confidential \u2014 Internal Use Only</div>\n' +
         '<script>\n' +
-        'function scaleToFit() {\n' +
+        'window.onload = function() {\n' +
         '  var wrap = document.getElementById("pdf-wrap");\n' +
         '  var hier = wrap ? wrap.querySelector("#oc-chart-hierarchy") : null;\n' +
-        '  if (!wrap || !hier) return;\n' +
-        '  // Available page area (subtract padding and header height)\n' +
-        '  var pageW = document.documentElement.clientWidth - 24;\n' +
-        '  var headerEl = document.querySelector(".pdf-header");\n' +
-        '  var headerH = headerEl ? headerEl.offsetHeight + 20 : 50;\n' +
-        '  var footerH = 30;\n' +
-        '  var pageH = document.documentElement.clientHeight - headerH - footerH - 24;\n' +
-        '  var chartW = hier.scrollWidth;\n' +
-        '  var chartH = hier.scrollHeight;\n' +
-        '  // Scale by the limiting dimension so chart fits on ONE page\n' +
-        '  var scaleW = chartW > 0 ? pageW / chartW : 1;\n' +
-        '  var scaleH = chartH > 0 ? pageH / chartH : 1;\n' +
-        '  var scale = Math.min(scaleW, scaleH, 1); // never upscale\n' +
-        '  wrap.style.transform = "scale(" + scale + ")";\n' +
-        '  wrap.style.transformOrigin = "top left";\n' +
-        '  wrap.style.width = (chartW * scale) + "px";\n' +
-        '  wrap.style.height = (chartH * scale) + "px";\n' +
-        '}\n' +
-        'window.onload = function() {\n' +
-        '  scaleToFit();\n' +
+        '  if (hier) {\n' +
+        '    // Measure the full content dimensions\n' +
+        '    var chartW = hier.scrollWidth;\n' +
+        '    var chartH = hier.scrollHeight;\n' +
+        '    var headerEl = document.querySelector(".pdf-header");\n' +
+        '    var footerEl = document.querySelector(".pdf-footer");\n' +
+        '    var headerH = headerEl ? headerEl.offsetHeight + 20 : 50;\n' +
+        '    var footerH = footerEl ? footerEl.offsetHeight + 20 : 30;\n' +
+        '    var padding = 24; // body padding\n' +
+        '    // Total page size = exactly what we need\n' +
+        '    var totalW = chartW + padding;\n' +
+        '    var totalH = chartH + headerH + footerH + padding;\n' +
+        '    // Inject dynamic @page size that matches content exactly\n' +
+        '    // This prevents pagination — the page IS the chart\n' +
+        '    var pageStyle = document.createElement("style");\n' +
+        '    pageStyle.textContent = "@page { size: " + totalW + "px " + totalH + "px; margin: 0; }";\n' +
+        '    document.head.appendChild(pageStyle);\n' +
+        '    // Also set body size to match\n' +
+        '    document.body.style.width = totalW + "px";\n' +
+        '    document.body.style.minHeight = totalH + "px";\n' +
+        '  }\n' +
         '  document.title = "' + filename + '";\n' +
         '  var doPrint = function() { window.print(); };\n' +
         '  if (document.fonts && document.fonts.ready) {\n' +
