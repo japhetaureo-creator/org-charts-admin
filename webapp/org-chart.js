@@ -185,6 +185,7 @@ function _ocLoadHierarchy() {
         _ocBuildTree(tree, hierarchy);
         _ocReattachListeners();
         _ocUpdateAllDirectsBadges();
+        _ocCenterChart();
         return hierarchy.querySelectorAll('.org-card').length > 0;
     } catch (e) {
         console.error('[OC-LOAD] Failed to parse stored hierarchy:', e);
@@ -209,6 +210,7 @@ async function _ocSyncHierarchyFromFirestore() {
                 _ocBuildTree(tree, hierarchy);
                 _ocReattachListeners();
                 _ocUpdateAllDirectsBadges();
+                _ocCenterChart();
             }
         } else {
             // Upload local hierarchy to Firestore if exists
@@ -271,6 +273,43 @@ function _ocApplyTransform(hier) {
 /** Convenience: apply zoom only (keeps existing pan) */
 function _ocApplyZoom() {
     _ocApplyTransform();
+}
+
+/**
+ * Center the org chart tree in the visible canvas after load.
+ * Resets panX/panY so the root of the tree appears near the top-center
+ * of the viewport, accounting for the current zoom level.
+ */
+function _ocCenterChart() {
+    // Reset pan first so we measure from a known baseline
+    OrgChartState.panX = 0;
+    OrgChartState.panY = 0;
+    _ocApplyTransform();
+
+    // Wait for one animation frame so the layout has reflowed
+    requestAnimationFrame(() => {
+        const canvas = document.getElementById('org-chart-canvas');
+        const hier = document.getElementById('oc-chart-hierarchy');
+        if (!canvas || !hier) return;
+
+        const canvasRect = canvas.getBoundingClientRect();
+
+        // Find the first root-level card (top of the tree)
+        const rootCard = hier.querySelector('.org-card');
+        if (!rootCard) return;
+        const rootRect = rootCard.getBoundingClientRect();
+
+        // Horizontal: centre the root card over the canvas centre
+        const rootCardCentreX = rootRect.left + rootRect.width / 2;
+        const canvasCentreX = canvasRect.left + canvasRect.width / 2;
+        OrgChartState.panX = canvasCentreX - rootCardCentreX;
+
+        // Vertical: 40 px padding from top so the card isn't flush with the edge
+        const topPadding = 40;
+        OrgChartState.panY = (canvasRect.top + topPadding) - rootRect.top;
+
+        _ocApplyTransform(hier);
+    });
 }
 
 
