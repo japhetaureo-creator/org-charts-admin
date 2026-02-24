@@ -387,33 +387,7 @@ function initOrgChartEventListeners() {
         exportBtn.addEventListener('click', exportOrgChartPDF);
     }
 
-    // ── Filter sidebar toggle ──────────────────────────────────────────────
-    const filterSidebar = document.getElementById('oc-sidebar-filters');
-    const filterShowFab = document.getElementById('oc-filters-show');
-    const filterHideBtn = document.getElementById('oc-filters-hide');
-    const ocCanvas = document.getElementById('org-chart-canvas');
 
-    if (filterHideBtn && filterSidebar && filterShowFab) {
-        filterHideBtn.addEventListener('click', () => {
-            filterSidebar.classList.add('oc-filters-collapsed');
-            filterShowFab.classList.add('oc-fab-visible');
-            if (ocCanvas) ocCanvas.style.paddingLeft = '40px';
-        });
-    }
-    if (filterShowFab && filterSidebar) {
-        filterShowFab.addEventListener('click', () => {
-            filterSidebar.classList.remove('oc-filters-collapsed');
-            filterShowFab.classList.remove('oc-fab-visible');
-            if (ocCanvas) ocCanvas.style.paddingLeft = '';
-        });
-    }
-
-    // Collapse smart filters by default on load
-    if (filterSidebar && filterShowFab) {
-        filterSidebar.classList.add('oc-filters-collapsed');
-        filterShowFab.classList.add('oc-fab-visible');
-        if (ocCanvas) ocCanvas.style.paddingLeft = '40px';
-    }
 
     // Share button
     const shareBtn = document.querySelector('[data-action="share"]');

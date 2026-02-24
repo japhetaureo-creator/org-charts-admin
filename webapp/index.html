@@ -436,45 +436,6 @@
         <div id="page-org-chart" class="page-section hidden flex-1 relative overflow-hidden">
             <div class="canvas-dot-pattern flex w-full h-full overflow-hidden relative">
 
-                <!-- Sidebar Filters -->
-                <button id="oc-filters-show" class="oc-filters-toggle-fab" title="Show filters">
-                    <span class="material-symbols-outlined !text-xl">filter_list</span>
-                </button>
-                <aside class="glass-panel oc-sidebar-filters" id="oc-sidebar-filters">
-                    <div class="flex items-center justify-between mb-6">
-                        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Smart Filters</h3>
-                        <button id="oc-filters-hide" class="text-slate-400 hover:text-white" title="Hide filters"><span
-                                class="material-symbols-outlined !text-lg">close</span></button>
-                    </div>
-                    <div class="space-y-6 overflow-y-auto pr-1 custom-scrollbar flex-1">
-                        <div>
-                            <label class="text-xs font-semibold text-slate-400 mb-3 block">DEPARTMENT</label>
-                            <div class="space-y-2" id="oc-filter-dept">
-                                <!-- Dynamically populated from SharedEmployeeStore -->
-                            </div>
-                        </div>
-                        <div class="h-px bg-slate-700/50"></div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-400 mb-3 block">LOCATION</label>
-                            <div class="space-y-2" id="oc-filter-loc">
-                                <!-- Dynamically populated from SharedEmployeeStore -->
-                            </div>
-                        </div>
-                        <div class="h-px bg-slate-700/50"></div>
-                        <div>
-                            <label class="text-xs font-semibold text-slate-400 mb-3 block">STATUS</label>
-                            <div class="flex flex-wrap gap-2" id="oc-filter-status">
-                                <!-- Dynamically populated from SharedEmployeeStore -->
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-auto pt-6">
-                        <button id="oc-reset-filters"
-                            class="w-full py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-sm font-medium text-slate-300 transition-colors border border-slate-600">
-                            Reset Filters
-                        </button>
-                    </div>
-                </aside>
 
                 <!-- Org Chart Header -->
                 <header class="glass-panel oc-canvas-header">
@@ -532,7 +493,7 @@
 
                 <!-- Canvas Scroll Area -->
                 <div id="org-chart-canvas"
-                    class="canvas-dot-pattern absolute top-[68px] left-0 right-0 bottom-0 overflow-auto py-10 pr-10 pl-[340px] cursor-grab">
+                    class="canvas-dot-pattern absolute top-[68px] left-0 right-0 bottom-0 overflow-auto py-10 px-10 cursor-grab">
 
                     <!-- Department View Pill Bar -->
                     <div id="oc-dept-view-bar"
@@ -870,27 +831,7 @@
                     </button>
                 </div>
 
-                <!-- Minimap -->
-                <div id="oc-minimap-wrapper" class="absolute bottom-6 right-6 z-50">
-                    <div id="oc-minimap"
-                        class="glass-panel minimap rounded-xl overflow-hidden shadow-2xl flex flex-col relative group w-48 h-32 opacity-70 cursor-pointer">
-                        <div class="absolute inset-0 bg-slate-900/80"></div>
-                        <div class="relative w-full h-full p-4 flex items-center justify-center">
-                            <div class="flex flex-col items-center gap-1">
-                                <div class="w-6 h-4 bg-indigo-500 rounded-sm"></div>
-                                <div class="w-0.5 h-2 bg-slate-500"></div>
-                                <div class="flex gap-1">
-                                    <div class="w-4 h-3 bg-cyan-500 rounded-sm"></div>
-                                    <div class="w-4 h-3 bg-purple-500 rounded-sm"></div>
-                                    <div class="w-4 h-3 bg-orange-500 rounded-sm"></div>
-                                </div>
-                            </div>
-                            <div id="oc-minimap-viewport"
-                                class="absolute border-2 border-white/70 rounded-sm oc-minimap-viewport-indicator">
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
         </div>
 
@@ -2315,7 +2256,7 @@
         <script src="monday-integration-ui.js?v=4"></script>
         <script src="company-settings.js?v=9"></script>
         <script src="settings.js?v=4"></script>
-        <script src="org-chart.js?v=32"></script>
+        <script src="org-chart.js?v=33"></script>
         <script src="employee-directory.js?v=4"></script>
         <script src="user-management.js?v=4"></script>
         <script src="app.js?v=4"></script>
