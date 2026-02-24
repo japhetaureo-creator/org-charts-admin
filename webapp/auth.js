@@ -11,9 +11,10 @@ const AuthStore = (() => {
 
     // ── Role permission definitions ───────────────────────────────────────────
     const PERMISSIONS = {
-        'Super Admin': { edit: true, add: true, delete: true, settings: true, userManagement: true },
-        'Admin': { edit: true, add: true, delete: true, settings: true, userManagement: false },
-        'guest': { edit: false, add: false, delete: false, settings: false, userManagement: false },
+        'Super Admin': { edit: true, add: true, delete: true, settings: true, userManagement: true, employeeDirectory: true, integrations: true },
+        'Admin': { edit: true, add: true, delete: true, settings: true, userManagement: false, employeeDirectory: true, integrations: true },
+        'Viewer': { edit: false, add: false, delete: false, settings: false, userManagement: false, employeeDirectory: false, integrations: false },
+        'guest': { edit: false, add: false, delete: false, settings: false, userManagement: false, employeeDirectory: false, integrations: false },
     };
 
     // ── Change listeners ──────────────────────────────────────────────────────
@@ -93,18 +94,22 @@ const AuthStore = (() => {
     function _updateNavLocks(perms) {
         const settingsLink = document.querySelector('nav a[data-page="settings"]');
         const usersLink = document.querySelector('nav a[data-page="users"]');
+        const directoryLink = document.querySelector('nav a[data-page="employee-directory"]');
+        const integrationsLink = document.querySelector('nav a[data-page="integrations"]');
 
         [
-            { el: settingsLink, allowed: perms.settings },
-            { el: usersLink, allowed: perms.userManagement },
-        ].forEach(({ el, allowed }) => {
+            { el: settingsLink, allowed: perms.settings, msg: 'Sign in as Admin or higher to access this section' },
+            { el: usersLink, allowed: perms.userManagement, msg: 'Sign in as Admin or higher to access this section' },
+            { el: directoryLink, allowed: perms.employeeDirectory, msg: 'Sign in as Admin or Viewer to access the Employee Directory' },
+            { el: integrationsLink, allowed: perms.integrations, msg: 'Sign in as Admin or higher to access Integrations' },
+        ].forEach(({ el, allowed, msg }) => {
             if (!el) return;
             if (allowed) {
                 el.classList.remove('nav-locked');
                 el.removeAttribute('title');
             } else {
                 el.classList.add('nav-locked');
-                el.title = 'Sign in as Admin or higher to access this section';
+                el.title = msg;
             }
         });
     }

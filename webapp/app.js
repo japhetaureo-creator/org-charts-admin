@@ -94,16 +94,16 @@ function applyAuthPermissions() {
     const canAccess = {
         settings: AuthStore.can('settings'),
         userManagement: AuthStore.can('userManagement'),
+        employeeDirectory: AuthStore.can('employeeDirectory'),
+        integrations: AuthStore.can('integrations'),
     };
 
     // If current page is restricted, bounce back to company dashboard
     const curPage = AppState.currentPage;
-    if (curPage === 'settings' && !canAccess.settings) {
-        navigateToPage('company');
-    }
-    if (curPage === 'users' && !canAccess.userManagement) {
-        navigateToPage('company');
-    }
+    if (curPage === 'settings' && !canAccess.settings) navigateToPage('company');
+    if (curPage === 'users' && !canAccess.userManagement) navigateToPage('company');
+    if (curPage === 'employee-directory' && !canAccess.employeeDirectory) navigateToPage('org-chart');
+    if (curPage === 'integrations' && !canAccess.integrations) navigateToPage('org-chart');
 }
 
 // ============================================================================
@@ -124,12 +124,22 @@ function initializeNavigation() {
 
 function navigateToPage(page) {
     // ── Auth guard: redirect guests away from restricted pages ────────────
-    const RESTRICTED = ['settings', 'users', 'integrations'];
-    if (RESTRICTED.includes(page) && typeof AuthStore !== 'undefined' && !AuthStore.isLoggedIn()) {
-        // Open login modal instead
-        if (typeof AuthUI !== 'undefined') {
-            AuthUI.openLoginModal();
-        }
+    // Pages that require being logged in AT ALL
+    const LOGIN_REQUIRED = ['settings', 'users', 'integrations', 'employee-directory'];
+    if (LOGIN_REQUIRED.includes(page) && typeof AuthStore !== 'undefined' && !AuthStore.isLoggedIn()) {
+        if (typeof AuthUI !== 'undefined') AuthUI.openLoginModal();
+        return;
+    }
+
+    // Pages that require specific permissions beyond just being logged in
+    const PERMISSION_MAP = {
+        'employee-directory': 'employeeDirectory',
+        'integrations': 'integrations',
+        'settings': 'settings',
+        'users': 'userManagement',
+    };
+    if (PERMISSION_MAP[page] && typeof AuthStore !== 'undefined' && !AuthStore.can(PERMISSION_MAP[page])) {
+        if (typeof AuthUI !== 'undefined') AuthUI.openLoginModal();
         return;
     }
 
