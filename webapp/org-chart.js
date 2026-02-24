@@ -10,7 +10,7 @@ const OrgChartState = {
     selectedCard: null,
     employees: [],
     draggedCard: null,
-    zoom: 1,
+    zoom: 0.7,
     panX: 0,
     panY: 0,
     filterDepts: [],
