@@ -112,6 +112,29 @@ function _ocBuildTree(tree, container) {
     });
 }
 
+/**
+ * Walk every org-card wrapper in the DOM and update its directs badge
+ * from the ACTUAL number of immediate child org-cards in the hierarchy.
+ * Must run after any render/sync/drag so counts are always accurate.
+ */
+function _ocUpdateAllDirectsBadges() {
+    document.querySelectorAll('#oc-chart-hierarchy .flex.flex-col.items-center').forEach(wrapper => {
+        const card = wrapper.querySelector(':scope > .org-card');
+        if (!card) return;
+        const badge = card.querySelector('[data-oc-directs]');
+        if (!badge) return;
+        // Count actual direct child org-cards in the next level
+        const childrenRow = wrapper.querySelector(':scope > .relative.flex.justify-center');
+        const count = childrenRow
+            ? childrenRow.querySelectorAll(':scope > .flex.flex-col.items-center > .org-card').length
+            : 0;
+        // Preserve the label text ('Directs' or 'Total') but update the number
+        const label = badge.textContent.replace(/^\d+\s*/, '');
+        badge.textContent = count + ' ' + label;
+    });
+}
+
+
 function _ocSaveHierarchy() {
     const hierarchy = document.getElementById('oc-chart-hierarchy');
     if (!hierarchy) return;
@@ -143,6 +166,8 @@ function _ocSaveHierarchy() {
             console.error('[OC-SAVE] Firestore write failed:', e)
         );
     }
+    // Refresh directs badges to reflect current hierarchy
+    _ocUpdateAllDirectsBadges();
 }
 
 function _ocLoadHierarchy() {
@@ -159,6 +184,7 @@ function _ocLoadHierarchy() {
         hierarchy.innerHTML = '';
         _ocBuildTree(tree, hierarchy);
         _ocReattachListeners();
+        _ocUpdateAllDirectsBadges();
         return hierarchy.querySelectorAll('.org-card').length > 0;
     } catch (e) {
         console.error('[OC-LOAD] Failed to parse stored hierarchy:', e);
@@ -182,6 +208,7 @@ async function _ocSyncHierarchyFromFirestore() {
                 hierarchy.innerHTML = '';
                 _ocBuildTree(tree, hierarchy);
                 _ocReattachListeners();
+                _ocUpdateAllDirectsBadges();
             }
         } else {
             // Upload local hierarchy to Firestore if exists
@@ -2121,7 +2148,7 @@ function createOrgCard(emp, level = 'individual', directsCount = 0) {
             <div class="flex items-center gap-2">
                 <div class="flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1.5 border border-white/5">
                     <span class="material-symbols-outlined !text-sm ${iconColor}">supervisor_account</span>
-                    <span class="text-xs font-medium text-slate-300">${directsCount} ${statsLabel}</span>
+                    <span data-oc-directs class="text-xs font-medium text-slate-300">${directsCount} ${statsLabel}</span>
                 </div>
                 <span data-oc-field="status" class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-[10px] font-semibold ring-1 ring-inset ${statusBadgeColor} ${showStatusBadge ? '' : 'hidden'}">
                     <span class="w-1.5 h-1.5 rounded-full ${statusDotColor}"></span>${statusLabel}
