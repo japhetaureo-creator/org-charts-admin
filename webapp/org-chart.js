@@ -801,7 +801,14 @@ function applyDeptView(dept) {
         w.style.transition = '';
     });
 
-    if (!dept) return; // "All Departments" — just show everything
+    if (!dept) {
+        // Re-calculate horizontal connectors now that all nodes are visible again
+        requestAnimationFrame(() => {
+            if (!hierarchy) return;
+            hierarchy.querySelectorAll('.relative.flex.justify-center').forEach(updateHorizontalConnector);
+        });
+        return;
+    }
 
     /**
      * Recursively check if a wrapper's subtree contains any card
@@ -881,6 +888,16 @@ function applyDeptView(dept) {
         } else {
             hide(rw);
         }
+    });
+
+    // After layout reflows, recalculate horizontal connector lines for all visible children rows
+    requestAnimationFrame(() => {
+        hierarchy.querySelectorAll('.relative.flex.justify-center').forEach(row => {
+            // Only update rows whose parent wrapper is visible
+            const parentWrapper = row.closest('.flex.flex-col.items-center');
+            if (!parentWrapper || parentWrapper.style.display === 'none') return;
+            updateHorizontalConnector(row);
+        });
     });
 }
 
@@ -1999,16 +2016,19 @@ function findChildrenContainer(wrapper) {
  * in a children container (.relative.flex.justify-center).
  */
 function updateHorizontalConnector(container) {
-    // Find child wrappers (the .flex.flex-col.items-center elements)
+    // Find VISIBLE child wrappers only (skip display:none nodes)
     const childWrappers = Array.from(container.children).filter(
-        el => el.classList.contains('flex') && el.classList.contains('items-center') && el.classList.contains('flex-col')
+        el => el.classList.contains('flex') &&
+            el.classList.contains('items-center') &&
+            el.classList.contains('flex-col') &&
+            el.style.display !== 'none'
     );
 
     // Remove existing horizontal connector
     const existingH = container.querySelector(':scope > .org-line-h');
     if (existingH) existingH.remove();
 
-    // If there is only one child, no horizontal connector is needed
+    // If there is only one (or zero) visible child, no horizontal connector needed
     if (childWrappers.length <= 1) return;
 
     // Create horizontal connector spanning from first child center to last child center
@@ -2017,7 +2037,7 @@ function updateHorizontalConnector(container) {
     hLine.style.position = 'absolute';
     hLine.style.top = '0';
 
-    // Calculate positions using the children widths
+    // Calculate position using VISIBLE children widths
     const firstW = childWrappers[0].offsetWidth;
     const lastW = childWrappers[childWrappers.length - 1].offsetWidth;
     hLine.style.left = (firstW / 2) + 'px';
