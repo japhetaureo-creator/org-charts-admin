@@ -2417,8 +2417,31 @@ async function exportOrgChartPDF() {
             scale: 2,
             backgroundColor: '#0f1115',
             allowTaint: false,
-            logging: false,
-            removeContainer: true
+            logging: true,
+            removeContainer: true,
+            onclone: (clonedDoc) => {
+                // CRITICAL: The CSS file org-chart.css has hardcoded classes like
+                // .sarah-jenkins-bg { background-image: url("lh3.googleusercontent.com/...") }
+                // These CSS rules re-apply background-image in the clone, causing CORS failures
+                // and white rectangles. Kill ALL background-images in the cloned hierarchy.
+                const killImagesStyle = clonedDoc.createElement('style');
+                killImagesStyle.textContent = `
+                    #oc-chart-hierarchy * {
+                        background-image: none !important;
+                        backdrop-filter: none !important;
+                        -webkit-backdrop-filter: none !important;
+                    }
+                    #oc-chart-hierarchy .org-card,
+                    #oc-chart-hierarchy .glass-panel {
+                        background: #1e293b !important;
+                    }
+                    #oc-chart-hierarchy {
+                        background: #0f1115 !important;
+                    }
+                `;
+                clonedDoc.head.appendChild(killImagesStyle);
+                console.log('[PDF Export] Injected kill-images stylesheet into clone');
+            }
         });
 
         // Restore ALL original inline styles
